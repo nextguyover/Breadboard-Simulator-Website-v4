@@ -158,8 +158,9 @@ def load():
     beauty_ob.light_linking.receiver_collection = receivers
 
     bpy.data.materials["Metal.004"].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.42
+    # Glossy board plastic, so the downlight catches the edges of every hole like the original shot.
     for name in ("Plastic & Texture.001", "Plastic.006"):
-        bpy.data.materials[name].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.4
+        bpy.data.materials[name].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.08
 
     world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
     scene.world = world

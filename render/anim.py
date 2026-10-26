@@ -43,6 +43,14 @@ def lerp(a, b, u):
     return a + (b - a) * u
 
 
+RES_RISE = 0.016
+
+
+def res_rise(t):
+    """The resistor follows the LED out of the board, much slower, and drops out of shot."""
+    return RES_RISE * ease_io(span(t, 0.12, 1.0))
+
+
 def rise(t):
     return RISE * ease_io(span(t, 0.05, 0.8))
 
@@ -68,6 +76,7 @@ def pose(t, led, cam, lights, forced_glow=None):
     spin = ease_io(span(t, 0.36, 1.0))
     led.rotation_euler = (math.radians(-5) * spin, 0, led["base_rz"] + math.radians(115) * spin)
     led["glow"] = glow(t, forced_glow)
+    bpy.data.objects["Resistor-Axial"].location = S.RES_HOME + Vector((0, 0, res_rise(t)))
 
     # Camera: a slow push-in on the hero shot, then a crane and orbit that follows the LED.
     led_center = led.location + Vector((0, 0, -0.0115))
@@ -87,7 +96,7 @@ def pose(t, led, cam, lights, forced_glow=None):
     # Focus starts on the holes at the foot of the parts, then follows the LED up as it lifts.
     focus = S.BOARD_FOCUS.lerp(led.location + Vector((0, 0, 0.002)), ease_io(span(t, 0.08, 0.45)))
     cam.data.dof.focus_distance = (cam.location - focus).length
-    cam.data.dof.aperture_fstop = lerp(2.8, 4.5, ease(span(t, 0.35, 0.9)))
+    cam.data.dof.aperture_fstop = lerp(4.0, 5.6, ease(span(t, 0.35, 0.9)))
 
     strips = lerp(0.25, 1.0, ease(span(t, 0.3, 0.75)))
     bpy.data.lights["Strip L"].energy = 0.55 * strips
