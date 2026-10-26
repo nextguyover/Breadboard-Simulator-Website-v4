@@ -133,13 +133,13 @@ export class Stage {
   update(input: StageInput, dt: number): void {
     // Keep decoded only what the current scroll position can reach soon.
     if (input.seq === "a") {
-      this.a.focus(input.frame, 10);
-      this.bOff.focus(0, 1);
-      this.bOn.focus(0, 1);
+      this.a.focus(input.frame, 36, 8);
+      this.bOff.focus(0, 2);
+      this.bOn.focus(0, 2);
     } else {
-      this.a.focus(this.a.count - 1, 1);
-      this.bOff.focus(input.frame, 7);
-      this.bOn.focus(input.frame, 7);
+      this.a.focus(this.a.count - 1, 2);
+      this.bOff.focus(input.frame, 12, 4);
+      this.bOn.focus(input.frame, 12, 4);
     }
     const smokeBusy = this.fx.update(dt);
     const key = JSON.stringify(input);

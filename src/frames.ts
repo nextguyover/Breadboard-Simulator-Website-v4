@@ -3,6 +3,8 @@
  * 8th, ...) so scrubbing works almost at once and sharpens as the rest stream in.
  */
 
+const PARALLEL_DECODES = 4;
+
 export type Variant = "d" | "m";
 
 /**
@@ -16,7 +18,9 @@ export class FrameSet {
   private readonly decoding = new Set<number>();
   private loaded = 0;
   private center = 0;
-  private radius = 2;
+  private dir = 1;
+  private lo = 0;
+  private hi = 2;
   onLoad: (() => void) | null = null;
 
   constructor(
@@ -48,14 +52,17 @@ export class FrameSet {
     return null;
   }
 
-  /** Moves the decoded window: frees frames outside it and decodes the missing ones, nearest first. */
-  focus(i: number, radius: number): void {
+  /**
+   * Moves the decoded window to `i`: `ahead` frames in the direction of travel, `behind` the
+   * other way. Frees frames outside it and decodes the missing ones, nearest first.
+   */
+  focus(i: number, ahead: number, behind = ahead): void {
     const c = Math.max(0, Math.min(this.count - 1, Math.round(i)));
+    if (c !== this.center) this.dir = c > this.center ? 1 : -1;
     this.center = c;
-    this.radius = radius;
+    [this.lo, this.hi] = this.dir > 0 ? [c - behind, c + ahead] : [c - ahead, c + behind];
     for (const [k, bmp] of this.bitmaps) {
-      // A little slack before freeing, so jitter at the edge doesn't thrash.
-      if (Math.abs(k - c) > radius + 2) {
+      if (!this.keep(k)) {
         bmp.close();
         this.bitmaps.delete(k);
       }
@@ -63,17 +70,26 @@ export class FrameSet {
     this.pump();
   }
 
+  /** In the window, with a little slack so jitter at the edge doesn't thrash. */
+  private keep(k: number): boolean {
+    return k >= this.lo - 2 && k <= this.hi + 2;
+  }
+
   private pump(): void {
     const c = this.center;
-    for (let d = 0; d <= this.radius && this.decoding.size < 3; d++) {
-      for (const k of d ? [c + d, c - d] : [c]) {
-        if (k < 0 || k >= this.count || this.bitmaps.has(k) || this.decoding.has(k)) continue;
+    const span = Math.max(this.hi - c, c - this.lo);
+    for (let d = 0; d <= span; d++) {
+      // The direction of travel first at each distance.
+      for (const k of d ? [c + d * this.dir, c - d * this.dir] : [c]) {
+        if (this.decoding.size >= PARALLEL_DECODES) return;
+        if (k < this.lo || k > this.hi || k < 0 || k >= this.count) continue;
+        if (this.bitmaps.has(k) || this.decoding.has(k)) continue;
         const blob = this.blobs[k];
         if (!blob) continue;
         this.decoding.add(k);
         createImageBitmap(blob)
           .then((bmp) => {
-            if (Math.abs(k - this.center) > this.radius + 2) bmp.close();
+            if (!this.keep(k)) bmp.close();
             else {
               this.bitmaps.set(k, bmp);
               this.onLoad?.();
@@ -84,7 +100,6 @@ export class FrameSet {
             this.decoding.delete(k);
             this.pump();
           });
-        if (this.decoding.size >= 3) return;
       }
     }
   }
@@ -117,7 +132,7 @@ export class FrameSet {
       const bmp = await createImageBitmap(this.blobs[i]!).catch(() => null);
       if (bmp) this.bitmaps.set(i, bmp);
       this.onLoad?.();
-    } else if (Math.abs(i - this.center) <= this.radius) this.pump();
+    } else if (i >= this.lo && i <= this.hi) this.pump();
   }
 }
 
