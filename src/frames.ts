@@ -11,7 +11,7 @@ export type Variant = "d" | "m";
  * keeping all of them would cost gigabytes; a window keeps scrubbing smooth for far less.
  */
 export class FrameSet {
-  private readonly blobs: (Blob | null)[];
+  private readonly blobs: (Blob | HTMLImageElement | null)[];
   private readonly bitmaps = new Map<number, ImageBitmap>();
   private readonly decoding = new Set<number>();
   private loaded = 0;
@@ -108,14 +108,10 @@ export class FrameSet {
   /** Downloads frame `i`; with `decode`, also waits until it is decoded and drawable. */
   async load(i: number, decode = false): Promise<void> {
     if (!this.blobs[i]) {
-      try {
-        const res = await fetch(this.url(i));
-        if (!res.ok) return; // a missing frame just stays a gap; nearest() covers it
-        this.blobs[i] = await res.blob();
-        this.loaded++;
-      } catch {
-        return;
-      }
+      const src = await fetchFrame(this.url(i));
+      if (!src) return; // a missing frame just stays a gap; nearest() covers it
+      this.blobs[i] = src;
+      this.loaded++;
     }
     if (decode && !this.bitmaps.has(i)) {
       const bmp = await createImageBitmap(this.blobs[i]!).catch(() => null);
@@ -123,6 +119,22 @@ export class FrameSet {
       this.onLoad?.();
     } else if (Math.abs(i - this.center) <= this.radius) this.pump();
   }
+}
+
+/** Fetches a frame as a compressed blob; falls back to an <img> where fetch is blocked (e.g. by a CSP). */
+async function fetchFrame(url: string): Promise<Blob | HTMLImageElement | null> {
+  try {
+    const res = await fetch(url);
+    if (res.ok) return await res.blob();
+  } catch {
+    /* fall through */
+  }
+  const img = new Image();
+  img.src = url;
+  return img.decode().then(
+    () => img,
+    () => null,
+  );
 }
 
 /** Runs loads with a little parallelism, in the given order. */
