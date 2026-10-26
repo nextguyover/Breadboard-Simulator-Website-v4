@@ -95,6 +95,37 @@ def pose(t, led, cam, lights, forced_glow=None):
     beauty.energy = 0.45 * ease(span(t, 0.34, 0.62))
 
 
+def write_meta(out, scene, led, cam, lights, turn):
+    """Where the LED is on screen in every frame (0-1 across, 0-1 down), for the site's
+    effects: the glow follows the dome, the smoke rises from it."""
+    from bpy_extras.object_utils import world_to_camera_view
+
+    def screen(p):
+        v = world_to_camera_view(scene, cam, p)
+        return [round(v.x, 5), round(1 - v.y, 5)]
+
+    frames = []
+    count = int(turn.split(":")[0]) if turn else FRAMES
+    for f in range(count):
+        if turn:
+            pose(1.0, led, cam, lights, 0.0)
+            led.rotation_euler.z += math.radians(float(turn.split(":")[1])) * f / (count - 1)
+        else:
+            pose(f / (FRAMES - 1), led, cam, lights)
+        bpy.context.view_layer.update()
+        m = led.matrix_world
+        frames.append({
+            "dome": screen(m @ Vector((0, 0, 0.0035))),
+            "top": screen(m @ Vector((0, 0, 0.0068))),
+            "legs": screen(m @ Vector((0, 0, -0.027))),
+            "glow": round(led["glow"], 3),
+        })
+    import json
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "meta.json"), "w") as fh:
+        json.dump({"aspect": scene.render.resolution_x / scene.render.resolution_y, "frames": frames}, fh)
+
+
 def main():
     # Works both as `python anim.py OUT ...` (bpy module) and `blender -b -P anim.py -- OUT ...`.
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
@@ -122,6 +153,9 @@ def main():
     if turn:
         n, deg = turn.split(":")
         a, b, step = 0, int(n), 1
+    if "--meta" in args:
+        write_meta(out, scene, led, cam, lights, turn)
+        return
     for f in range(a, b, step):
         path = os.path.join(out, f"{prefix}_{f:04d}.png")
         if os.path.exists(path) and "--force" not in args:
