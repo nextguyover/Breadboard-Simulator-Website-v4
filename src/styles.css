@@ -1654,7 +1654,8 @@ input[type="range"]::-moz-range-thumb {
   width: 28%;
   aspect-ratio: 9 / 19.5;
   padding: 2.2%;
-  border-radius: 34px;
+  /* radius scales with the phone so it stays phone-shaped at any size */
+  border-radius: 13% / 6%;
   background: linear-gradient(160deg, #5a5a62, #2a2a30);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.26),
@@ -1666,7 +1667,7 @@ input[type="range"]::-moz-range-thumb {
 .phone-screen {
   width: 100%;
   height: 100%;
-  border-radius: 26px;
+  border-radius: 10% / 4.6%;
   overflow: hidden;
   background: #000;
 }
