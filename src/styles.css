@@ -2039,3 +2039,47 @@ input[type="range"]::-moz-range-thumb {
     margin: 0;
   }
 }
+
+/* ---------- 404 ---------- */
+
+.notfound-main {
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  padding: 48px 20px;
+}
+
+.notfound-main .lede {
+  margin-inline: auto;
+}
+
+.notfound-led {
+  width: 44px;
+  margin-bottom: 28px;
+}
+
+/* An LED with nothing driving it: it flickers once, then stays dark. */
+.notfound-dome {
+  fill: #3a1414;
+  animation: notfound-flicker 2.4s 0.4s both;
+}
+
+@keyframes notfound-flicker {
+  0%, 8%, 14%, 22% { fill: #f73434; filter: drop-shadow(0 0 12px rgba(247, 52, 52, 0.7)); }
+  4%, 11%, 18%, 100% { fill: #3a1414; filter: none; }
+}
+
+.notfound-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notfound-dome {
+    animation: none;
+  }
+}
