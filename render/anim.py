@@ -48,8 +48,8 @@ RES_RISE = 0.012
 RES_DROP = 0.05
 
 
-RES_DRIFT = 0.009  # sideways, to the right on screen
-RES_TILT = math.radians(14)
+RES_DRIFT = 0.016  # sideways, away from the LED (right on screen)
+RES_TILT = math.radians(-12)  # right end up
 
 
 def res_offset(t):
