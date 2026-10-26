@@ -118,12 +118,12 @@ def pose(t, led, cam, lights, forced_glow=None):
     # over a wider angle instead of reflecting the black backdrop.
     strips = lerp(0.0, 1.0, ease(span(t, 0.15, 0.55)))
     leg_metal = bpy.data.materials["Metal.004"].node_tree.nodes["Principled BSDF"].inputs["Roughness"]
-    leg_metal.default_value = lerp(0.25, 0.45, ease(span(t, 0.15, 0.55)))
-    bpy.data.lights["Strip L"].energy = 0.55 * strips
-    bpy.data.lights["Strip R"].energy = 0.3 * strips
+    leg_metal.default_value = lerp(0.25, 0.33, ease(span(t, 0.15, 0.55)))
+    bpy.data.lights["Strip L"].energy = 0.45 * strips
+    bpy.data.lights["Strip R"].energy = 0.24 * strips
     key, beauty = lights
     key.energy = S.KEY_ENERGY * (1 - ease(span(t, 0.5, 0.86)))
-    beauty.energy = 0.45 * ease(span(t, 0.34, 0.62))
+    beauty.energy = 0.32 * ease(span(t, 0.34, 0.62))
 
 
 def write_meta(out, scene, led, cam, lights, turn):

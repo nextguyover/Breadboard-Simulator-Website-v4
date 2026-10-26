@@ -109,6 +109,10 @@ def load():
     receivers = bpy.data.collections.new("Part Receivers")
     for n in ("Diode-Light-Emitting", "Legs", "Reflector", "Resistor-Axial", "Legs.016"):
         receivers.objects.link(bpy.data.objects[n])
+    # The strips are there for the LED; on the resistor they'd make it outshine the LED.
+    led_receivers = bpy.data.collections.new("LED Receivers")
+    for n in ("Diode-Light-Emitting", "Legs", "Reflector"):
+        led_receivers.objects.link(bpy.data.objects[n])
 
     # Faint cool rim from behind so the LED reads when it is off.
     rim = bpy.data.lights.new("Rim", "AREA")
@@ -158,7 +162,7 @@ def load():
         a = math.radians(68) * side
         ob.location = (math.sin(a) * 0.16, 0.0, -math.cos(a) * 0.16 + 0.0)
         ob.rotation_euler = (0, a, 0)
-        ob.light_linking.receiver_collection = receivers
+        ob.light_linking.receiver_collection = led_receivers
 
     render_settings(scene)
     bpy.context.view_layer.update()
