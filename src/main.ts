@@ -34,7 +34,7 @@ function buildDrawer(): void {
         const el = document.createElement("figure");
         el.className = "part";
         el.style.setProperty("--i", String(i));
-        el.innerHTML = `<img src="/parts/${p.img}.webp" alt="" loading="lazy" decoding="async" width="320" height="320" /><figcaption><b>${p.name}</b><small>${p.detail}</small></figcaption>`;
+        el.innerHTML = `<img src="${import.meta.env.BASE_URL}parts/${p.img}.webp" alt="" loading="lazy" decoding="async" width="320" height="320" /><figcaption><b>${p.name}</b><small>${p.detail}</small></figcaption>`;
         return el;
       }),
     );

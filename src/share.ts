@@ -33,7 +33,7 @@ export function startShare(root: HTMLElement): void {
       while (popped < want) {
         const [img, label] = PARTS[popped++];
         const chip = document.createElement("span");
-        chip.innerHTML = `<img src="/parts/${img}.webp" alt="" />${label}`;
+        chip.innerHTML = `<img src="${import.meta.env.BASE_URL}parts/${img}.webp" alt="" />${label}`;
         partsEl.append(chip);
       }
       if (u < 1) requestAnimationFrame(tick);
@@ -45,7 +45,7 @@ export function startShare(root: HTMLElement): void {
     hashEl.textContent = hash.slice(0, 96) + "…";
     PARTS.forEach(([img, label]) => {
       const chip = document.createElement("span");
-      chip.innerHTML = `<img src="/parts/${img}.webp" alt="" />${label}`;
+      chip.innerHTML = `<img src="${import.meta.env.BASE_URL}parts/${img}.webp" alt="" />${label}`;
       partsEl.append(chip);
     });
     started = true;

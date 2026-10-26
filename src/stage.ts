@@ -72,9 +72,9 @@ export class Stage {
     this.variant = Stage.pickVariant();
     const v = this.variant;
     const pad = (i: number) => String(i).padStart(4, "0");
-    this.a = new FrameSet(seqA.frames.length, (i) => `/frames/a/${v}/${pad(i)}.webp`);
-    this.bOff = new FrameSet(seqB.frames.length, (i) => `/frames/b/off/${v}/${pad(i)}.webp`);
-    this.bOn = new FrameSet(seqB.frames.length, (i) => `/frames/b/on/${v}/${pad(i)}.webp`);
+    this.a = new FrameSet(seqA.frames.length, (i) => `${import.meta.env.BASE_URL}frames/a/${v}/${pad(i)}.webp`);
+    this.bOff = new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/off/${v}/${pad(i)}.webp`);
+    this.bOn = new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/on/${v}/${pad(i)}.webp`);
     for (const set of [this.a, this.bOff, this.bOn]) set.onLoad = () => (this.dirty = true);
     this.resize();
   }
