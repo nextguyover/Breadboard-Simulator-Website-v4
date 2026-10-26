@@ -7,7 +7,9 @@ render scene, `assets/hero.blend` (camera, focus point, downlight, backdrop and 
 - `scene.py` loads the hero scene and adds the LED glow and the lights for the later shots.
 - `anim.py` animates and renders the sequence to 16-bit PNG.
 - `post.py` adds the LED bloom, vignette and grain.
-- `build_frames.py` grades and encodes everything into `public/frames/`.
+- `build_video.py` grades the renders and encodes the AV1 and H.264 clips in `public/video/`,
+  then runs `index_video.py`, which writes the packet index the player reads (`src/data/video.json`).
+- `build_frames.py` grades and encodes the WebP fallback frames into `public/frames/`.
 - `parts.py` and `build_parts.py` make the studio shots in `public/parts/`.
 
 ## Rendering on a GPU (recommended)

@@ -4,7 +4,8 @@
  */
 import seqA from "./data/seq-a.json";
 import seqB from "./data/seq-b.json";
-import { FrameSet, type Variant, loadInOrder } from "./frames";
+import { FrameSet, type Frames, type Variant, loadInOrder } from "./frames";
+import { VideoSet, pickClips } from "./video";
 import { Smoke } from "./smoke";
 
 type Pt = [number, number];
@@ -51,9 +52,11 @@ export class Stage {
   private ctx: CanvasRenderingContext2D;
   private fx: Smoke;
   private variant: Variant;
-  private a: FrameSet;
-  private bOff: FrameSet;
-  private bOn: FrameSet;
+  private a: Frames;
+  private bOff: Frames;
+  private bOn: Frames;
+  /** The image-frame versions: the fallback, and the instant first frame before video arrives. */
+  private readonly img: { a: FrameSet; bOff: FrameSet; bOn: FrameSet };
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -72,10 +75,13 @@ export class Stage {
     this.variant = Stage.pickVariant();
     const v = this.variant;
     const pad = (i: number) => String(i).padStart(4, "0");
-    this.a = new FrameSet(seqA.frames.length, (i) => `${import.meta.env.BASE_URL}frames/a/${v}/${pad(i)}.webp`);
-    this.bOff = new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/off/${v}/${pad(i)}.webp`);
-    this.bOn = new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/on/${v}/${pad(i)}.webp`);
-    for (const set of [this.a, this.bOff, this.bOn]) set.onLoad = () => (this.dirty = true);
+    this.img = {
+      a: new FrameSet(seqA.frames.length, (i) => `${import.meta.env.BASE_URL}frames/a/${v}/${pad(i)}.webp`),
+      bOff: new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/off/${v}/${pad(i)}.webp`),
+      bOn: new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/on/${v}/${pad(i)}.webp`),
+    };
+    ({ a: this.a, bOff: this.bOff, bOn: this.bOn } = this.img);
+    for (const set of Object.values(this.img)) set.onLoad = () => (this.dirty = true);
     this.resize();
   }
 
@@ -84,10 +90,48 @@ export class Stage {
   }
 
   async load(startFrame: number): Promise<void> {
-    await this.a.load(Math.round(startFrame), true);
+    const start = Math.round(startFrame);
+    // One small image first, so the hero shows at once whatever the rest loads as.
+    await this.img.a.load(start, true);
     this.onReady();
-    const a = this.a.order([Math.round(startFrame)]).map((i) => () => this.a.load(i));
-    const b = this.bOff.order().flatMap((i) => [() => this.bOff.load(i), () => this.bOn.load(i)]);
+    if (!(await this.loadVideo(start))) await this.loadImages(start);
+  }
+
+  /** The video clips, where WebCodecs can play them. Resolves false to fall back to images. */
+  private async loadVideo(start: number): Promise<boolean> {
+    const clips = await pickClips(this.variant).catch(() => null);
+    if (!clips) return false;
+    const { img } = this;
+    const sets = {
+      a: new VideoSet(clips.a, img.a),
+      bOff: new VideoSet(clips["b-off"], img.bOff),
+      bOn: new VideoSet(clips["b-on"], img.bOn),
+    };
+    let fellBack = false;
+    for (const set of Object.values(sets)) {
+      set.onLoad = () => (this.dirty = true);
+      set.onFail = () => {
+        if (fellBack) return;
+        fellBack = true;
+        ({ a: this.a, bOff: this.bOff, bOn: this.bOn } = img);
+        this.dirty = true;
+        void this.loadImages(start);
+      };
+    }
+    // The turntable's first frames as images too, in case the page is reloaded mid-way down.
+    void img.bOff.load(0, true);
+    void img.bOn.load(0, true);
+    ({ a: this.a, bOff: this.bOff, bOn: this.bOn } = sets);
+    this.sizeVideo();
+    if (!(await sets.a.load())) return true; // onFail has already switched to images
+    await Promise.all([sets.bOff.load(), sets.bOn.load()]);
+    return true;
+  }
+
+  private async loadImages(start: number): Promise<void> {
+    const { a: ia, bOff, bOn } = this.img;
+    const a = ia.order([start]).map((i) => () => ia.load(i));
+    const b = bOff.order().flatMap((i) => [() => bOff.load(i), () => bOn.load(i)]);
     // The hero sequence first, but the sticky pose's first frames early so the docked LED never waits.
     await loadInOrder([...a.slice(0, 12), b[0], b[1], ...a.slice(12), ...b.slice(2)], 6);
   }
@@ -101,7 +145,15 @@ export class Stage {
     c.width = this.w;
     c.height = this.h;
     this.fx.resize(this.w, this.h, this.dpr);
+    this.sizeVideo();
     this.dirty = true;
+  }
+
+  /** Tells the video sets how wide the cover layout draws a frame, so they decode no bigger. */
+  private sizeVideo(): void {
+    const aspect = this.variant === "m" ? 0.5 : 16 / 9;
+    const px = Math.max(this.w, this.h * aspect);
+    for (const set of [this.a, this.bOff, this.bOn]) if (set instanceof VideoSet) set.setMaxWidth(px);
   }
 
   /** Maps a point in the full 16:9 render (0-1) into the current variant's image (0-1). */
@@ -133,13 +185,13 @@ export class Stage {
   update(input: StageInput, dt: number): void {
     // Keep decoded only what the current scroll position can reach soon.
     if (input.seq === "a") {
-      this.a.focus(input.frame, 36, 8);
+      this.a.focus(input.frame, 18, 5);
       this.bOff.focus(0, 2);
       this.bOn.focus(0, 2);
     } else {
       this.a.focus(this.a.count - 1, 2);
-      this.bOff.focus(input.frame, 12, 4);
-      this.bOn.focus(input.frame, 12, 4);
+      this.bOff.focus(input.frame, 9, 3);
+      this.bOn.focus(input.frame, 9, 3);
     }
     const smokeBusy = this.fx.update(dt);
     const key = JSON.stringify(input);
@@ -204,7 +256,7 @@ export class Stage {
     const dh = base.height * pl.s;
     ctx.imageSmoothingQuality = "high";
 
-    const blend = (s: FrameSet, alpha: number) => {
+    const blend = (s: Frames, alpha: number) => {
       const a = s.get(i0) ?? s.nearest(i0);
       if (!a) return;
       ctx.globalAlpha = alpha;

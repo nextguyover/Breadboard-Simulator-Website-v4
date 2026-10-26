@@ -7,12 +7,21 @@ const PARALLEL_DECODES = 4;
 
 export type Variant = "d" | "m";
 
+/** A scroll sequence the stage can draw from: image frames or a video clip. */
+export interface Frames {
+  readonly count: number;
+  onLoad: (() => void) | null;
+  get(i: number): ImageBitmap | null;
+  nearest(i: number): ImageBitmap | null;
+  focus(i: number, ahead: number, behind?: number): void;
+}
+
 /**
  * A frame sequence held compressed in memory (a few KB per frame), with only a window
  * of frames around the scroll position decoded. Decoded 1080p frames are ~8 MB each, so
  * keeping all of them would cost gigabytes; a window keeps scrubbing smooth for far less.
  */
-export class FrameSet {
+export class FrameSet implements Frames {
   private readonly blobs: (Blob | HTMLImageElement | null)[];
   private readonly bitmaps = new Map<number, ImageBitmap>();
   private readonly decoding = new Set<number>();
