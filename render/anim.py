@@ -71,7 +71,7 @@ def pose(t, led, cam, lights, forced_glow=None):
 
     # Camera: a slow push-in on the hero shot, then a crane and orbit that follows the LED.
     led_center = led.location + Vector((0, 0, -0.0115))
-    follow = ease_io(span(t, 0.08, 0.7))
+    follow = ease_io(span(t, 0.04, 0.58))
     target = HERO_TARGET.lerp(led_center, follow)
     start_offset = CAM_START - HERO_TARGET
     dist0 = start_offset.length
@@ -88,16 +88,18 @@ def pose(t, led, cam, lights, forced_glow=None):
     cam.data.dof.aperture_fstop = lerp(2.8, 4.5, ease(span(t, 0.35, 0.9)))
 
     strips = lerp(0.25, 1.0, ease(span(t, 0.3, 0.75)))
-    bpy.data.lights["Strip L"].energy = 0.45 * strips
-    bpy.data.lights["Strip R"].energy = 0.25 * strips
+    bpy.data.lights["Strip L"].energy = 0.55 * strips
+    bpy.data.lights["Strip R"].energy = 0.3 * strips
     key, beauty = lights
     key.energy = 1.6 * (1 - ease(span(t, 0.5, 0.86)))
     beauty.energy = 0.45 * ease(span(t, 0.34, 0.62))
 
 
 def main():
-    out = sys.argv[1]
-    args = sys.argv[2:]
+    # Works both as `python anim.py OUT ...` (bpy module) and `blender -b -P anim.py -- OUT ...`.
+    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
+    out = argv[0]
+    args = argv[1:]
 
     def opt(name, default):
         return args[args.index(name) + 1] if name in args else default
@@ -107,17 +109,28 @@ def main():
     a, b, step = (int(x) for x in opt("--frames", f"0:{FRAMES}:1").split(":"))
     forced = {"on": 1.0, "off": 0.0}.get(opt("--glow", "auto"))
     prefix = opt("--prefix", "a")
+    # --turn N:DEG renders the sticky pose (end of the sequence) turning a further DEG degrees.
+    turn = opt("--turn", None)
 
     scene, led, res, cam = S.load()
     led["base_rz"] = led.rotation_euler.z
     S.render_settings(scene, w, h, samples)
+    if "--gpu" in args:
+        S.use_gpu(scene)
     lights = (bpy.data.lights["Key"], bpy.data.lights["Beauty"])
     os.makedirs(out, exist_ok=True)
+    if turn:
+        n, deg = turn.split(":")
+        a, b, step = 0, int(n), 1
     for f in range(a, b, step):
         path = os.path.join(out, f"{prefix}_{f:04d}.png")
         if os.path.exists(path) and "--force" not in args:
             continue
-        pose(f / (FRAMES - 1), led, cam, lights, forced)
+        if turn:
+            pose(1.0, led, cam, lights, forced)
+            led.rotation_euler.z += math.radians(float(deg)) * f / (b - 1)
+        else:
+            pose(f / (FRAMES - 1), led, cam, lights, forced)
         bpy.context.view_layer.update()
         scene.render.filepath = path
         bpy.ops.render.render(write_still=True)

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Breadboard Simulator: build real circuits in your browser</title>
+    <meta
+      name="description"
+      content="A free 3D breadboard simulator that runs in your browser. Plug in real parts, wire them up and watch them behave like the real thing, from a single LED to 555 timers and logic chips."
+    />
+    <meta name="theme-color" content="#050506" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="https://breadboardsimulator.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Breadboard Simulator" />
+    <meta property="og:description" content="Build real circuits on a 3D breadboard, free in your browser." />
+    <meta property="og:url" content="https://breadboardsimulator.com/" />
+    <meta property="og:image" content="https://breadboardsimulator.com/og.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" as="image" href="/frames/a/d/0000.webp" media="(min-aspect-ratio: 4/5)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/frames/a/m/0000.webp" media="(max-aspect-ratio: 4/5)" fetchpriority="high" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <!-- The rendered LED lives on this fixed stage; sections scroll over it. -->
+    <div class="stage" aria-hidden="true">
+      <picture class="stage-poster">
+        <source media="(max-aspect-ratio: 4/5)" srcset="/frames/a/m/0000.webp" />
+        <img src="/frames/a/d/0000.webp" alt="" decoding="async" fetchpriority="high" />
+      </picture>
+      <canvas class="stage-canvas"></canvas>
+      <canvas class="stage-fx"></canvas>
+    </div>
+
+    <header class="nav" data-nav>
+      <a class="brand" href="#top" aria-label="Breadboard Simulator, back to top">
+        <svg class="brand-mark" viewBox="0 0 93.45 163.53" aria-hidden="true">
+          <path class="brand-dome" d="M87.08,104.07V38.23H87a40.3,40.3,0,0,0-80.49,0H6.37v65.84H0v17H93.45v-17Z" />
+          <path fill="#5b5b5b" d="M29.73,163.53h0a6.37,6.37,0,0,1-6.37-6.37v-36.1H36.1v36.1A6.37,6.37,0,0,1,29.73,163.53Z" />
+          <path fill="#5b5b5b" d="M64.47,163.53h0a6.37,6.37,0,0,1-6.37-6.37v-36.1H70.84v36.1A6.37,6.37,0,0,1,64.47,163.53Z" />
+        </svg>
+        <span>Breadboard Simulator</span>
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#live">How it works</a>
+        <a href="#parts">Parts</a>
+        <a href="#learn">Learning</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="btn btn-small btn-primary" href="https://app.breadboardsimulator.com" data-app>
+        Open simulator
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" /></svg>
+      </a>
+    </header>
+
+    <main id="main">
+      <!-- 1. Hero + scroll sequence: the LED lifts out of the board. -->
+      <section class="seq" id="top" data-seq>
+        <div class="seq-pin">
+          <div class="hero-copy" data-hero>
+            <p class="eyebrow"><span class="dot"></span> Free, and it runs in your browser</p>
+            <h1 class="hero-title">
+              <span class="line"><span>A breadboard that</span></span>
+              <span class="line"><span>never runs out <em>of parts.</em></span></span>
+            </h1>
+            <p class="hero-sub">
+              Plug in real components, wire them up and watch them behave exactly like they would on your desk. Then
+              push them too far, and watch what happens.
+            </p>
+            <div class="hero-cta">
+              <a class="btn btn-primary btn-large" href="https://app.breadboardsimulator.com" data-app>
+                Start building
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+              </a>
+              <a class="btn btn-ghost btn-large" href="#live">See how it works</a>
+            </div>
+          </div>
+
+          <div class="beat beat-left" data-beat="0.2,0.42">
+            <p class="kicker">Simulated, not animated</p>
+            <p class="beat-text">That glow isn't a special effect. A real circuit solver works out the current through the LED, live, and the light follows.</p>
+          </div>
+          <div class="beat beat-right" data-beat="0.43,0.62">
+            <p class="kicker">So when you break the circuit</p>
+            <p class="beat-text">Pull a leg out of the board and the current stops. It goes dark, just like the real thing would.</p>
+          </div>
+          <div class="beat beat-center" data-beat="0.74,1.02">
+            <p class="beat-big">Every part is real.<br /><em>Every result is earned.</em></p>
+          </div>
+
+          <div class="scroll-cue" data-cue>
+            <span>Scroll</span>
+            <i></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. The live circuit: the visitor powers the LED. -->
+      <section class="live" id="live" data-live>
+        <div class="live-inner wrap">
+          <div class="live-copy">
+            <p class="kicker reveal">Live simulation</p>
+            <h2 class="h2 reveal">Turn the knob.<br /><em>Watch the current.</em></h2>
+            <p class="lede reveal">
+              Change a value while the circuit is running and it responds straight away, so you see cause and effect
+              instead of just an answer. Try it on the LED.
+            </p>
+
+            <div class="rig reveal" data-rig>
+              <div class="rig-head">
+                <span class="rig-title"><i class="rig-live"></i> 9 V battery, resistor, red LED</span>
+                <span class="rig-state" data-state>Off</span>
+              </div>
+
+              <svg class="rig-schematic" viewBox="0 0 360 120" aria-hidden="true">
+                <path class="wire" d="M30 92V28h70M170 28h70M290 28h40v64H30" />
+                <path class="wire flow" data-flow d="M30 92V28h70M170 28h70M290 28h40v64H30" />
+                <g transform="translate(18 58)">
+                  <path class="sym" d="M0 0h24M5 8h14" />
+                  <text x="30" y="8">9 V</text>
+                </g>
+                <g class="res-sym" transform="translate(100 28)">
+                  <rect x="0" y="-11" width="70" height="22" rx="11" class="res-body" />
+                  <rect class="band" data-band="0" x="12" y="-11" width="6" height="22" />
+                  <rect class="band" data-band="1" x="23" y="-11" width="6" height="22" />
+                  <rect class="band" data-band="2" x="34" y="-11" width="6" height="22" />
+                  <rect class="band" x="54" y="-11" width="5" height="22" fill="#c9a24a" />
+                </g>
+                <g transform="translate(240 28)">
+                  <path class="sym" d="M0 0h14M14-12v24l26-12z M40-12v24M40 0h10" />
+                  <path class="sym rays" data-rays d="M24-16l6-9M32-14l6-9" />
+                </g>
+              </svg>
+
+              <label class="rig-slider">
+                <span class="rig-label">Resistance <output data-r>1 kΩ</output></span>
+                <input type="range" min="0" max="1000" value="600" step="1" data-slider aria-label="Resistance" />
+                <span class="rig-scale"><span>10 kΩ</span><span>47 Ω</span></span>
+              </label>
+
+              <dl class="rig-readout">
+                <div><dt>Current</dt><dd data-i>0 mA</dd></div>
+                <div><dt>LED drop</dt><dd data-vf>0 V</dd></div>
+                <div><dt>Resistor heat</dt><dd data-p>0 mW</dd></div>
+              </dl>
+              <div class="meter" aria-hidden="true"><i data-meter></i><span class="meter-limit" title="20 mA"></span></div>
+
+              <div class="rig-burnt" data-burnt hidden>
+                <p><strong>Pop.</strong> That's the magic smoke. A real LED wouldn't come back from this one.</p>
+                <button class="btn btn-small btn-light" type="button" data-replace>Swap in a new LED</button>
+              </div>
+            </div>
+            <p class="hint reveal">Drag towards 47 Ω to see what too much current does.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Engine -->
+      <section class="engine" id="engine">
+        <div class="wrap">
+          <div class="engine-head">
+            <p class="kicker reveal">Under the hood</p>
+            <h2 class="h2 reveal">The same maths<br /><em>engineers trust.</em></h2>
+            <p class="lede reveal">
+              Every circuit is solved by ngspice, the open-source SPICE simulator used to design real hardware. It's
+              compiled to WebAssembly and runs on your own device, so there's nothing to install and nothing to wait for.
+            </p>
+          </div>
+
+          <div class="bento">
+            <article class="card card-scope reveal">
+              <div class="card-copy">
+                <h3>A two-channel oscilloscope, built in</h3>
+                <p>Clip a probe onto any hole and watch the voltage over time. Here's a 555 timer: its capacitor charging and discharging, and the square wave it makes.</p>
+              </div>
+              <div class="scope" data-scope>
+                <canvas></canvas>
+                <div class="scope-legend">
+                  <span class="ch1">CH1 · output</span>
+                  <span class="ch2">CH2 · capacitor</span>
+                  <span class="scope-div">1 V/div · 200 ms/div</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="card card-chip reveal">
+              <div class="chip-art" aria-hidden="true">
+                <div class="chip">
+                  <span class="chip-notch"></span>
+                  <span class="chip-label">74HC08</span>
+                  <span class="pins top"></span><span class="pins bottom"></span>
+                </div>
+                <div class="logic" data-logic><span>A</span><span>B</span><span class="out">Y</span></div>
+              </div>
+              <h3>Analog and digital, together</h3>
+              <p>Logic chips run on SPICE's own digital models right alongside your transistors and capacitors. Mix a 555, some gates and a counter on one board.</p>
+            </article>
+
+            <article class="card card-stat reveal">
+              <p class="stat"><span data-count="0">0</span><small>installs</small></p>
+              <p>Open a tab and start. It works offline once it has loaded, and on a school Chromebook as happily as a gaming PC.</p>
+            </article>
+
+            <article class="card card-smoke reveal">
+              <div class="smoke-art" aria-hidden="true"><i></i><i></i><i></i></div>
+              <h3>Break things safely</h3>
+              <p>Wire an LED straight across a battery or put a capacitor in backwards. You'll see it fail, smoke and all, and learn why without buying a single spare.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Parts -->
+      <section class="parts" id="parts">
+        <div class="wrap">
+          <div class="parts-head">
+            <p class="kicker reveal">The parts drawer</p>
+            <h2 class="h2 reveal"><span class="big-num" data-count="35">35</span> parts, <em>no shipping.</em></h2>
+            <p class="lede reveal">From your very first resistor to timers, op-amps, regulators and logic chips. Drag one out and it snaps into the board.</p>
+          </div>
+          <div class="drawer reveal" data-drawer></div>
+        </div>
+        <div class="marquee" aria-hidden="true">
+          <div class="marquee-track" data-marquee="0"></div>
+          <div class="marquee-track reverse" data-marquee="1"></div>
+        </div>
+      </section>
+
+      <!-- 5. Phone -->
+      <section class="anywhere" id="anywhere">
+        <div class="wrap anywhere-inner">
+          <div class="anywhere-copy">
+            <p class="kicker reveal">Phone, tablet, laptop</p>
+            <h2 class="h2 reveal">Fits in<br /><em>your pocket.</em></h2>
+            <p class="lede reveal">
+              Built for touch from the start. Swipe through the parts drawer, drag a part onto the board, pinch to look
+              closer and tap a button to press it. The same circuit works on every screen you own.
+            </p>
+            <ul class="ticks reveal">
+              <li>Works offline once it has loaded</li>
+              <li>Install it to your home screen like an app</li>
+              <li>Opens your old Breadboard Simulator files too</li>
+            </ul>
+          </div>
+          <div class="devices reveal" data-devices>
+            <div class="laptop">
+              <div class="laptop-screen"><img src="/shots/desktop.webp" alt="Breadboard Simulator on a laptop, with a 555 timer circuit on the board" loading="lazy" /></div>
+              <div class="laptop-base"></div>
+            </div>
+            <div class="phone">
+              <div class="phone-screen"><img src="/shots/phone.webp" alt="Breadboard Simulator on a phone, with the parts drawer open" loading="lazy" /></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Share -->
+      <section class="share" id="share">
+        <div class="wrap share-inner">
+          <div class="share-copy">
+            <p class="kicker reveal">Sharing</p>
+            <h2 class="h2 reveal">Your whole circuit,<br /><em>in one link.</em></h2>
+            <p class="lede reveal">
+              Every part and wire is packed into the link itself. Send it in a chat or drop it in a lesson plan, and
+              whoever opens it sees exactly what you built. No account, no upload, no server keeping a copy.
+            </p>
+          </div>
+          <div class="linkbox reveal" data-linkbox>
+            <div class="linkbox-bar">
+              <span class="lock" aria-hidden="true"></span>
+              <span class="linkbox-url"><span class="host">app.breadboardsimulator.com</span><span class="hash" data-hash>/#c=</span><span class="caret"></span></span>
+            </div>
+            <div class="linkbox-parts" data-linkparts></div>
+            <button class="btn btn-small btn-light" type="button" data-copy>Copy a sample link</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Learning -->
+      <section class="learn" id="learn">
+        <div class="wrap">
+          <p class="kicker reveal">For everyone who's curious</p>
+          <h2 class="h2 reveal">Learn electronics<br /><em>by doing it.</em></h2>
+          <div class="audiences">
+            <article class="aud reveal">
+              <span class="aud-num">01</span>
+              <h3>Students</h3>
+              <p>Build it, break it, fix it. Hover any part to see what it does and read its live voltage and current, so the numbers in your textbook finally mean something.</p>
+            </article>
+            <article class="aud reveal">
+              <span class="aud-num">02</span>
+              <h3>Teachers</h3>
+              <p>Build a circuit once and share it as a link. Every student opens the same thing on whatever device the school has, and nobody has to hunt for a missing jumper wire.</p>
+            </article>
+            <article class="aud reveal">
+              <span class="aud-num">03</span>
+              <h3>Tinkerers</h3>
+              <p>Try an idea before you order parts. Check that resistor value, see if the 555 really blinks at 1 Hz, and only then warm up the soldering iron.</p>
+            </article>
+          </div>
+
+          <div class="examples reveal">
+            <p class="examples-title">Start from a ready-made example</p>
+            <ul class="example-list" data-examples></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. FAQ -->
+      <section class="faq" id="faq">
+        <div class="wrap faq-inner">
+          <div>
+            <p class="kicker reveal">Questions</p>
+            <h2 class="h2 reveal">Good to <em>know.</em></h2>
+          </div>
+          <div class="faq-list" data-faq>
+            <details class="reveal">
+              <summary>Is it really free?</summary>
+              <p>Yes. There's no trial, no account and nothing to unlock. Open it and build.</p>
+            </details>
+            <details class="reveal">
+              <summary>Do I need to install anything?</summary>
+              <p>No. It runs in any modern browser on Windows, macOS, Linux, ChromeOS, iOS and Android. If you like, you can add it to your home screen or dock so it opens like an app.</p>
+            </details>
+            <details class="reveal">
+              <summary>How accurate is the simulation?</summary>
+              <p>Circuits are solved with ngspice, a full SPICE simulator, using models of real parts like the 2N3904 transistor and the NE555 timer. It's the same kind of maths used to design real electronics, so what you see is what the circuit would do.</p>
+            </details>
+            <details class="reveal">
+              <summary>Can I save my circuits?</summary>
+              <p>Your work is kept in your browser between visits. You can also save a circuit to a file, or share it as a link that contains the entire circuit.</p>
+            </details>
+            <details class="reveal">
+              <summary>Does it work without internet?</summary>
+              <p>Yes. After the first visit everything it needs is stored on your device, so it keeps working on a plane or in a classroom with patchy wifi.</p>
+            </details>
+            <details class="reveal">
+              <summary>I used the original Breadboard Simulator. Can I open my old files?</summary>
+              <p>Yes. Open a .bsim file from the original app and your circuit comes across onto the new board.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Bookend: the LED goes back into the board and lights up. -->
+      <section class="seq seq-end" id="start" data-seq-end>
+        <div class="seq-pin">
+          <div class="end-copy" data-end>
+            <h2 class="end-title">Your breadboard<br /><em>is ready.</em></h2>
+            <p class="lede">Free, in your browser, on any device. Plug something in.</p>
+            <a class="btn btn-primary btn-large" href="https://app.breadboardsimulator.com" data-app>
+              Open Breadboard Simulator
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <a class="brand" href="#top">
+          <svg class="brand-mark" viewBox="0 0 93.45 163.53" aria-hidden="true">
+            <path class="brand-dome" d="M87.08,104.07V38.23H87a40.3,40.3,0,0,0-80.49,0H6.37v65.84H0v17H93.45v-17Z" />
+            <path fill="#5b5b5b" d="M29.73,163.53h0a6.37,6.37,0,0,1-6.37-6.37v-36.1H36.1v36.1A6.37,6.37,0,0,1,29.73,163.53Z" />
+            <path fill="#5b5b5b" d="M64.47,163.53h0a6.37,6.37,0,0,1-6.37-6.37v-36.1H70.84v36.1A6.37,6.37,0,0,1,64.47,163.53Z" />
+          </svg>
+          <span>Breadboard Simulator</span>
+        </a>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="https://app.breadboardsimulator.com" data-app>Open the simulator</a>
+          <a href="#live">How it works</a>
+          <a href="#parts">Parts</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <p class="footer-note">Circuits simulated with <a href="https://ngspice.sourceforge.io/" rel="noopener">ngspice</a>. © <span data-year>2026</span> Breadboard Simulator.</p>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

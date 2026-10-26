@@ -128,7 +128,7 @@ def load():
     aim(beauty_ob, Vector((0.004, 0.0025, 0.05)))
     beauty_ob.light_linking.receiver_collection = receivers
 
-    bpy.data.materials["Metal.004"].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.12
+    bpy.data.materials["Metal.004"].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.42
     for name in ("Plastic & Texture.001", "Plastic.006"):
         bpy.data.materials[name].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.4
 
@@ -181,6 +181,26 @@ def load():
 def aim(ob, target):
     direction = target - ob.location
     ob.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def use_gpu(scene):
+    """Render on the GPU: OptiX (RTX cores) when available, else CUDA, HIP, oneAPI or Metal."""
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    for backend in ("OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"):
+        try:
+            prefs.compute_device_type = backend
+        except TypeError:
+            continue
+        prefs.refresh_devices()
+        gpus = [d for d in prefs.devices if d.type == backend]
+        if gpus:
+            for d in prefs.devices:
+                d.use = d.type == backend
+            scene.cycles.device = "GPU"
+            print("Rendering on", backend, [d.name for d in gpus], flush=True)
+            return backend
+    print("No GPU found, rendering on the CPU", flush=True)
+    return None
 
 
 def render_settings(scene, width=1280, height=720, samples=96):
