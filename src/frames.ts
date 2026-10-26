@@ -5,33 +5,88 @@
 
 export type Variant = "d" | "m";
 
+/**
+ * A frame sequence held compressed in memory (a few KB per frame), with only a window
+ * of frames around the scroll position decoded. Decoded 1080p frames are ~8 MB each, so
+ * keeping all of them would cost gigabytes; a window keeps scrubbing smooth for far less.
+ */
 export class FrameSet {
-  readonly images: (HTMLImageElement | null)[];
+  private readonly blobs: (Blob | null)[];
+  private readonly bitmaps = new Map<number, ImageBitmap>();
+  private readonly decoding = new Set<number>();
   private loaded = 0;
+  private center = 0;
+  private radius = 2;
   onLoad: (() => void) | null = null;
 
   constructor(
     readonly count: number,
     private readonly url: (i: number) => string,
   ) {
-    this.images = new Array(count).fill(null);
+    this.blobs = new Array(count).fill(null);
   }
 
   get complete(): boolean {
     return this.loaded === this.count;
   }
 
-  /** The nearest loaded frame to `i`, searching outwards. */
-  nearest(i: number): HTMLImageElement | null {
+  /** The decoded frame `i`, if it is in the window and ready. */
+  get(i: number): ImageBitmap | null {
+    return this.bitmaps.get(i) ?? null;
+  }
+
+  /** The nearest decoded frame to `i`, searching outwards. */
+  nearest(i: number): ImageBitmap | null {
     const n = this.count;
     const c = Math.max(0, Math.min(n - 1, Math.round(i)));
     for (let d = 0; d < n; d++) {
-      const a = this.images[c - d];
+      const a = this.bitmaps.get(c - d);
       if (a) return a;
-      const b = this.images[c + d];
+      const b = this.bitmaps.get(c + d);
       if (b) return b;
     }
     return null;
+  }
+
+  /** Moves the decoded window: frees frames outside it and decodes the missing ones, nearest first. */
+  focus(i: number, radius: number): void {
+    const c = Math.max(0, Math.min(this.count - 1, Math.round(i)));
+    this.center = c;
+    this.radius = radius;
+    for (const [k, bmp] of this.bitmaps) {
+      // A little slack before freeing, so jitter at the edge doesn't thrash.
+      if (Math.abs(k - c) > radius + 2) {
+        bmp.close();
+        this.bitmaps.delete(k);
+      }
+    }
+    this.pump();
+  }
+
+  private pump(): void {
+    const c = this.center;
+    for (let d = 0; d <= this.radius && this.decoding.size < 3; d++) {
+      for (const k of d ? [c + d, c - d] : [c]) {
+        if (k < 0 || k >= this.count || this.bitmaps.has(k) || this.decoding.has(k)) continue;
+        const blob = this.blobs[k];
+        if (!blob) continue;
+        this.decoding.add(k);
+        createImageBitmap(blob)
+          .then((bmp) => {
+            if (Math.abs(k - this.center) > this.radius + 2) bmp.close();
+            else {
+              this.bitmaps.set(k, bmp);
+              this.onLoad?.();
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            this.decoding.delete(k);
+            this.pump();
+          });
+        if (this.decoding.size >= 3) return;
+      }
+    }
   }
 
   order(first: number[] = []): number[] {
@@ -50,21 +105,23 @@ export class FrameSet {
     return out;
   }
 
-  load(i: number): Promise<void> {
-    if (this.images[i]) return Promise.resolve();
-    const img = new Image();
-    img.decoding = "async";
-    img.src = this.url(i);
-    return img
-      .decode()
-      .then(() => {
-        this.images[i] = img;
+  /** Downloads frame `i`; with `decode`, also waits until it is decoded and drawable. */
+  async load(i: number, decode = false): Promise<void> {
+    if (!this.blobs[i]) {
+      try {
+        const res = await fetch(this.url(i));
+        if (!res.ok) return; // a missing frame just stays a gap; nearest() covers it
+        this.blobs[i] = await res.blob();
         this.loaded++;
-        this.onLoad?.();
-      })
-      .catch(() => {
-        /* a missing frame just stays a gap; nearest() covers it */
-      });
+      } catch {
+        return;
+      }
+    }
+    if (decode && !this.bitmaps.has(i)) {
+      const bmp = await createImageBitmap(this.blobs[i]!).catch(() => null);
+      if (bmp) this.bitmaps.set(i, bmp);
+      this.onLoad?.();
+    } else if (Math.abs(i - this.center) <= this.radius) this.pump();
   }
 }
 

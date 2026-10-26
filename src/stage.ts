@@ -84,7 +84,7 @@ export class Stage {
   }
 
   async load(startFrame: number): Promise<void> {
-    await this.a.load(Math.round(startFrame));
+    await this.a.load(Math.round(startFrame), true);
     this.onReady();
     const a = this.a.order([Math.round(startFrame)]).map((i) => () => this.a.load(i));
     const b = this.bOff.order().flatMap((i) => [() => this.bOff.load(i), () => this.bOn.load(i)]);
@@ -131,6 +131,16 @@ export class Stage {
   }
 
   update(input: StageInput, dt: number): void {
+    // Keep decoded only what the current scroll position can reach soon.
+    if (input.seq === "a") {
+      this.a.focus(input.frame, 10);
+      this.bOff.focus(0, 1);
+      this.bOn.focus(0, 1);
+    } else {
+      this.a.focus(this.a.count - 1, 1);
+      this.bOff.focus(input.frame, 7);
+      this.bOn.focus(input.frame, 7);
+    }
     const smokeBusy = this.fx.update(dt);
     const key = JSON.stringify(input);
     if (!this.dirty && key === this.last && !smokeBusy) return;
@@ -152,7 +162,7 @@ export class Stage {
     const pl = this.place(img, input.dock, input.shift, input.zoom);
     const meta = this.meta(input.seq, input.frame);
     const [x, y] = this.toImage(meta[which]);
-    return [pl.x + x * img.naturalWidth * pl.s, pl.y + y * img.naturalHeight * pl.s];
+    return [pl.x + x * img.width * pl.s, pl.y + y * img.height * pl.s];
   }
 
   private meta(seq: "a" | "b", frame: number): Meta {
@@ -160,13 +170,13 @@ export class Stage {
     return frames[Math.max(0, Math.min(frames.length - 1, Math.round(frame)))];
   }
 
-  private frameImage(seq: "a" | "b", frame: number): HTMLImageElement | null {
+  private frameImage(seq: "a" | "b", frame: number): ImageBitmap | null {
     return (seq === "a" ? this.a : this.bOff).nearest(frame);
   }
 
-  private place(img: HTMLImageElement, dock: number, shift: [number, number], zoom = 1): Placement {
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
+  private place(img: ImageBitmap, dock: number, shift: [number, number], zoom = 1): Placement {
+    const iw = img.width;
+    const ih = img.height;
     const c = this.cover(iw, ih);
     c.s *= zoom;
     c.x = (this.w - iw * c.s) / 2 + shift[0] * this.w;
@@ -190,16 +200,16 @@ export class Stage {
     const base = set.nearest(i0);
     if (!base) return;
     const pl = this.place(base, input.dock, input.shift, input.zoom);
-    const dw = base.naturalWidth * pl.s;
-    const dh = base.naturalHeight * pl.s;
+    const dw = base.width * pl.s;
+    const dh = base.height * pl.s;
     ctx.imageSmoothingQuality = "high";
 
     const blend = (s: FrameSet, alpha: number) => {
-      const a = s.images[i0] ?? s.nearest(i0);
+      const a = s.get(i0) ?? s.nearest(i0);
       if (!a) return;
       ctx.globalAlpha = alpha;
       ctx.drawImage(a, pl.x, pl.y, dw, dh);
-      const b = s.images[i0 + 1];
+      const b = s.get(i0 + 1);
       if (frac > 0.01 && b) {
         ctx.globalAlpha = alpha * frac;
         ctx.drawImage(b, pl.x, pl.y, dw, dh);
