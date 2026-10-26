@@ -84,7 +84,9 @@ def pose(t, led, cam, lights, forced_glow=None):
     el = lerp(el0, math.radians(7.0), orbit)
     cam.location = target + Vector((math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el))) * dist
     S.aim(cam, target)
-    cam.data.dof.focus_distance = (cam.location - (led.location + Vector((0, 0, 0.002)))).length
+    # Focus starts on the holes at the foot of the parts, then follows the LED up as it lifts.
+    focus = S.BOARD_FOCUS.lerp(led.location + Vector((0, 0, 0.002)), ease_io(span(t, 0.08, 0.45)))
+    cam.data.dof.focus_distance = (cam.location - focus).length
     cam.data.dof.aperture_fstop = lerp(2.8, 4.5, ease(span(t, 0.35, 0.9)))
 
     strips = lerp(0.25, 1.0, ease(span(t, 0.3, 0.75)))

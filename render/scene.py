@@ -20,7 +20,10 @@ KEEP = {"Breadboard", "Adhesive", "Diode-Light-Emitting", "Legs", "Reflector", "
 
 # LED legs in F14/F15, resistor from G15 to G18 (shares row 15 with the LED's cathode).
 LED_HOME = Vector((0.00375, 0.0025, 0.0285))
-RES_HOME = Vector((0.00625, -0.0025, 0.0215))
+# The resistor sits one row nearer the camera than the LED, in front of it like the original hero shot.
+RES_HOME = Vector((0.00125, -0.0025, 0.0215))
+# Where the opening shot focuses: the holes at the foot of the parts.
+BOARD_FOCUS = Vector((0.0025, 0.0, 0.0085))
 LED_RED = (1.0, 0.006, 0.004, 1.0)
 
 
@@ -179,7 +182,7 @@ def load():
     cam.location = (-0.24, 0.0, 0.05)
     target = Vector((0.004, -0.0005, 0.021))
     aim(cam, target)
-    cam_data.dof.focus_distance = (cam.location - Vector((0.004, 0.0025, 0.025))).length
+    cam_data.dof.focus_distance = (cam.location - BOARD_FOCUS).length
 
     # Tall strip softboxes either side of the camera, riding along with it. A vertical leg
     # mirrors a light at the camera's own height, so these draw a clean highlight down each
