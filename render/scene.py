@@ -197,6 +197,10 @@ def use_gpu(scene):
             for d in prefs.devices:
                 d.use = d.type == backend
             scene.cycles.device = "GPU"
+            # Denoise on the GPU too, and keep the scene loaded between frames instead of
+            # rebuilding it, so the CPU isn't the bottleneck.
+            scene.cycles.denoising_use_gpu = True
+            scene.render.use_persistent_data = True
             print("Rendering on", backend, [d.name for d in gpus], flush=True)
             return backend
     print("No GPU found, rendering on the CPU", flush=True)
