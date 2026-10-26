@@ -139,6 +139,8 @@ def load():
     cam.data.sensor_height = 20.25
     FSTOP_HOME = cam.data.dof.aperture_fstop
     cam.data.dof.focus_object = None
+    # The original's 10 cm near clip cuts into the front of the board once the camera moves.
+    cam.data.clip_start = 0.002
     cam.data.dof.focus_distance = (cam.location - FOCUS_HOME).length
 
     # Tall strip softboxes either side of the camera, riding along with it, for clean

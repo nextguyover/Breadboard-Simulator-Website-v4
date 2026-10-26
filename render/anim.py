@@ -44,12 +44,16 @@ def lerp(a, b, u):
     return a + (b - a) * u
 
 
-RES_RISE = 0.005
+RES_RISE = 0.012
+RES_DROP = 0.05
 
 
 def res_rise(t):
-    """The resistor follows the LED out of the board, much slower, and drops out of shot."""
-    return RES_RISE * ease_io(span(t, 0.12, 1.0))
+    """The resistor is tugged out of the board after the LED, much slower, then gets left
+    behind and drops out of the bottom of the shot as the camera follows the LED up."""
+    up = RES_RISE * ease_io(span(t, 0.06, 0.62))
+    down = RES_DROP * span(t, 0.5, 0.85) ** 2
+    return up - down
 
 
 def rise(t):
