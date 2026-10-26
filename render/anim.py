@@ -113,7 +113,12 @@ def pose(t, led, cam, lights, forced_glow=None):
     cam.data.dof.focus_distance = (cam.location - focus).length
     cam.data.dof.aperture_fstop = lerp(S.FSTOP_HOME, 5.6, ease(span(t, 0.35, 0.9)))
 
-    strips = lerp(0.0, 1.0, ease(span(t, 0.3, 0.75)))
+    # Strip softboxes come up as the LED leaves the spotlight, so its legs stay lit. The legs'
+    # metal also goes from the original's near-mirror finish to satin, which catches the strips
+    # over a wider angle instead of reflecting the black backdrop.
+    strips = lerp(0.0, 1.0, ease(span(t, 0.15, 0.55)))
+    leg_metal = bpy.data.materials["Metal.004"].node_tree.nodes["Principled BSDF"].inputs["Roughness"]
+    leg_metal.default_value = lerp(0.25, 0.45, ease(span(t, 0.15, 0.55)))
     bpy.data.lights["Strip L"].energy = 0.55 * strips
     bpy.data.lights["Strip R"].energy = 0.3 * strips
     key, beauty = lights
