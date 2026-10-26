@@ -1,4 +1,4 @@
-﻿"""Grades the rendered PNGs (render/out) and encodes the videos the site scrubs
+"""Grades the rendered PNGs (render/out) and encodes the videos the site scrubs
 (public/video). Each sequence is encoded twice per framing: AV1 10-bit for browsers that
 decode it, and H.264 8-bit as the fallback everything plays. Framings: the full
 2560x1440 render for wide screens ("d") and its 720x1440 centre crop for phones ("m").
