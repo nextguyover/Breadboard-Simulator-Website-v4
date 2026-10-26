@@ -47,7 +47,7 @@ def lerp(a, b, u):
 RES_RISE = 0.012  # straight up: enough for the leads (7.5 mm in the clips) to clear the board
 RES_DROP = 0.05
 RES_DRIFT = 0.022  # sideways, away from the LED (right on screen)
-RES_TILT = math.radians(12)  # right end dips as it topples off to the right
+RES_TILT = math.radians(-12)  # topples outward, away from the LED: the right end dips
 
 
 def res_offset(t):
