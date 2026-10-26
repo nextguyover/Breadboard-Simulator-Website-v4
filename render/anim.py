@@ -19,8 +19,9 @@ import scene as S  # noqa: E402
 FRAMES = 150
 LEG_DEPTH = 0.0075  # how far the legs sit inside the board's clips
 RISE = 0.034
-HERO_TARGET = Vector((0.004, -0.0005, 0.021))
-CAM_START = Vector((-0.24, 0.0, 0.05))
+# The original shot's camera and aim point, read from the hero scene in main().
+HERO_TARGET = Vector()
+CAM_START = Vector()
 
 
 def clamp01(x):
@@ -43,7 +44,7 @@ def lerp(a, b, u):
     return a + (b - a) * u
 
 
-RES_RISE = 0.016
+RES_RISE = 0.005
 
 
 def res_rise(t):
@@ -94,15 +95,15 @@ def pose(t, led, cam, lights, forced_glow=None):
     cam.location = target + Vector((math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el))) * dist
     S.aim(cam, target)
     # Focus starts on the holes at the foot of the parts, then follows the LED up as it lifts.
-    focus = S.BOARD_FOCUS.lerp(led.location + Vector((0, 0, 0.002)), ease_io(span(t, 0.08, 0.45)))
+    focus = S.FOCUS_HOME.lerp(led.location + Vector((0, 0, 0.002)), ease_io(span(t, 0.08, 0.45)))
     cam.data.dof.focus_distance = (cam.location - focus).length
-    cam.data.dof.aperture_fstop = lerp(4.0, 5.6, ease(span(t, 0.35, 0.9)))
+    cam.data.dof.aperture_fstop = lerp(S.FSTOP_HOME, 5.6, ease(span(t, 0.35, 0.9)))
 
-    strips = lerp(0.25, 1.0, ease(span(t, 0.3, 0.75)))
+    strips = lerp(0.0, 1.0, ease(span(t, 0.3, 0.75)))
     bpy.data.lights["Strip L"].energy = 0.55 * strips
     bpy.data.lights["Strip R"].energy = 0.3 * strips
     key, beauty = lights
-    key.energy = 1.6 * (1 - ease(span(t, 0.5, 0.86)))
+    key.energy = S.KEY_ENERGY * (1 - ease(span(t, 0.5, 0.86)))
     beauty.energy = 0.45 * ease(span(t, 0.34, 0.62))
 
 
@@ -154,7 +155,11 @@ def main():
     # --turn N:DEG renders the sticky pose (end of the sequence) turning a further DEG degrees.
     turn = opt("--turn", None)
 
+    global HERO_TARGET, CAM_START
     scene, led, res, cam = S.load()
+    CAM_START = cam.location.copy()
+    forward = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+    HERO_TARGET = CAM_START + forward * (S.FOCUS_HOME - CAM_START).length
     led["base_rz"] = led.rotation_euler.z
     S.render_settings(scene, w, h, samples)
     if "--gpu" in args:

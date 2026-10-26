@@ -11,19 +11,15 @@ import bpy
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SOURCE_BLEND = os.environ.get(
-    "BSIM_MODELS",
-    os.path.join(HERE, "assets", "breadboard.blend"),
-)
+# The original hero render: camera, focus point, downlight, backdrop and glossy board.
+SOURCE_BLEND = os.environ.get("BSIM_HERO", os.path.join(HERE, "assets", "hero.blend"))
 
-KEEP = {"Breadboard", "Adhesive", "Diode-Light-Emitting", "Legs", "Reflector", "Resistor-Axial", "Legs.016"}
-
-# LED legs in F14/F15, resistor from G15 to G18 (shares row 15 with the LED's cathode).
-LED_HOME = Vector((0.00375, 0.0025, 0.0285))
-# The resistor sits one row nearer the camera than the LED, in front of it like the original hero shot.
-RES_HOME = Vector((0.00125, -0.0025, 0.0215))
-# Where the opening shot focuses: the holes at the foot of the parts.
-BOARD_FOCUS = Vector((0.0025, 0.0, 0.0085))
+# Filled in by load() from the hero scene, so the animation starts on the original shot.
+LED_HOME = Vector()
+RES_HOME = Vector()
+FOCUS_HOME = Vector()
+KEY_ENERGY = 0.0
+FSTOP_HOME = 9.0
 LED_RED = (1.0, 0.006, 0.004, 1.0)
 
 
@@ -34,33 +30,16 @@ def _socket(node, *names):
     raise KeyError(names)
 
 
-def led_material(led):
-    """Red epoxy dome that glows from inside. Brightness follows the LED object's
-    `glow` property (0 = off, 1 = normal brightness)."""
-    mat = bpy.data.materials.new("LED Epoxy")
-    mat.use_nodes = True
-    nt = mat.node_tree
-    nt.nodes.clear()
-    out = nt.nodes.new("ShaderNodeOutputMaterial")
-    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
-    bsdf.inputs["Base Color"].default_value = (0.42, 0.012, 0.008, 1)
-    bsdf.inputs["Roughness"].default_value = 0.06
-    _socket(bsdf, "Transmission Weight", "Transmission").default_value = 0.3
-    _socket(bsdf, "Coat Weight", "Clearcoat").default_value = 1.0
-    _socket(bsdf, "Coat Roughness").default_value = 0.02
-    _socket(bsdf, "Subsurface Weight").default_value = 0.0
-    _socket(bsdf, "Subsurface Radius").default_value = (1.0, 0.05, 0.03)
-    _socket(bsdf, "Subsurface Scale").default_value = 0.003
-    _socket(bsdf, "Emission Color").default_value = LED_RED
-    em = _socket(bsdf, "Emission Strength")
-    drv = em.driver_add("default_value").driver
+def drive_glow(led):
+    """The original epoxy material, with its glow following the LED object's `glow`
+    property (0 = off, 1 = normal brightness)."""
+    bsdf = led.material_slots[0].material.node_tree.nodes["Principled BSDF"]
+    drv = _socket(bsdf, "Emission Strength").driver_add("default_value").driver
     var = drv.variables.new()
     var.name = "g"
     var.targets[0].id = led
     var.targets[0].data_path = '["glow"]'
-    drv.expression = "g * 2.2"
-    nt.links.new(bsdf.outputs[0], out.inputs["Surface"])
-    return mat
+    drv.expression = "g"
 
 
 def smooth_lens(ob, levels=3, sharp_deg=50):
@@ -89,19 +68,27 @@ def smooth_lens(ob, levels=3, sharp_deg=50):
 
 
 def load():
+    global LED_HOME, RES_HOME, FOCUS_HOME, KEY_ENERGY, FSTOP_HOME
     bpy.ops.wm.open_mainfile(filepath=os.path.abspath(SOURCE_BLEND))
-    for o in list(bpy.data.objects):
-        if o.name not in KEEP:
-            bpy.data.objects.remove(o, do_unlink=True)
+    # A stray part hidden under the board.
+    if "Transition" in bpy.data.objects:
+        bpy.data.objects.remove(bpy.data.objects["Transition"], do_unlink=True)
     scene = bpy.context.scene
     led = bpy.data.objects["Diode-Light-Emitting"]
-    led.location = LED_HOME
+    res = bpy.data.objects["Resistor-Axial"]
+    cam = scene.camera
+    LED_HOME = led.location.copy()
+    RES_HOME = res.location.copy()
+    focus = bpy.data.objects["Focus Point"]
+    FOCUS_HOME = focus.matrix_world.translation.copy()
     led["glow"] = 1.0
     smooth_lens(led)
-    led.data.materials[0] = led_material(led)
-    res = bpy.data.objects["Resistor-Axial"]
-    res.location = RES_HOME
-    res.rotation_euler = (0, 0, 0)
+    drive_glow(led)
+
+    # The downlight, renamed so the animation can fade it.
+    key_ob = bpy.data.objects["Spot"]
+    key_ob.data.name = "Key"
+    KEY_ENERGY = key_ob.data.energy
 
     # Point light inside the dome so the LED throws red light on its legs and the board.
     glow = bpy.data.lights.new("LED Glow", "POINT")
@@ -112,23 +99,16 @@ def load():
     v.name = "g"
     v.targets[0].id = led
     v.targets[0].data_path = '["glow"]'
-    d.expression = "g * 0.04"
+    d.expression = "g * 0.006"
     glow_ob = bpy.data.objects.new("LED Glow", glow)
     scene.collection.objects.link(glow_ob)
     glow_ob.parent = led
     glow_ob.location = (0, 0, 0.0035)
 
-    # Overhead spotlight: the pool of light on the board.
-    spot = bpy.data.lights.new("Key", "SPOT")
-    spot.energy = 1.6
-    spot.spot_size = math.radians(9)
-    spot.spot_blend = 0.7
-    spot.shadow_soft_size = 0.02
-    spot.color = (1.0, 0.97, 0.93)
-    spot_ob = bpy.data.objects.new("Key", spot)
-    scene.collection.objects.link(spot_ob)
-    spot_ob.location = (0.02, 0.0, 0.26)
-    aim(spot_ob, Vector((0.01, 0.0, 0.008)))
+    # Lights for the parts only (light-linked), so the board keeps the original's look.
+    receivers = bpy.data.collections.new("Part Receivers")
+    for n in ("Diode-Light-Emitting", "Legs", "Reflector", "Resistor-Axial", "Legs.016"):
+        receivers.objects.link(bpy.data.objects[n])
 
     # Faint cool rim from behind so the LED reads when it is off.
     rim = bpy.data.lights.new("Rim", "AREA")
@@ -137,12 +117,8 @@ def load():
     rim.color = (0.75, 0.82, 1.0)
     rim_ob = bpy.data.objects.new("Rim", rim)
     scene.collection.objects.link(rim_ob)
-    rim_ob.location = (0.14, 0.05, 0.09)
-    aim(rim_ob, Vector((0.004, 0.0025, 0.03)))
-    # ...but only on the parts, never the board, or it washes out the spotlight pool.
-    receivers = bpy.data.collections.new("Rim Receivers")
-    for n in ("Diode-Light-Emitting", "Legs", "Reflector", "Resistor-Axial", "Legs.016"):
-        receivers.objects.link(bpy.data.objects[n])
+    rim_ob.location = (-0.14, -0.05, 0.09)
+    aim(rim_ob, LED_HOME + Vector((0, 0, 0.002)))
     rim_ob.light_linking.receiver_collection = receivers
 
     # Product-shot key that takes over once the LED leaves the board and goes dark.
@@ -153,41 +129,20 @@ def load():
     beauty.color = (1.0, 0.96, 0.92)
     beauty_ob = bpy.data.objects.new("Beauty", beauty)
     scene.collection.objects.link(beauty_ob)
-    beauty_ob.location = (-0.1, 0.12, 0.16)
-    aim(beauty_ob, Vector((0.004, 0.0025, 0.05)))
+    beauty_ob.location = (0.1, -0.12, 0.16)
+    aim(beauty_ob, LED_HOME + Vector((0, 0, 0.025)))
     beauty_ob.light_linking.receiver_collection = receivers
 
-    bpy.data.materials["Metal.004"].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.42
-    # Glossy board plastic, so the downlight catches the edges of every hole like the original shot.
-    for name in ("Plastic & Texture.001", "Plastic.006"):
-        bpy.data.materials[name].node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.08
+    # Same framing on any aspect: a fixed vertical field of view (the original's 36 mm wide
+    # sensor at 16:9), so a portrait crop is the same shot as the landscape frame.
+    cam.data.sensor_fit = "VERTICAL"
+    cam.data.sensor_height = 20.25
+    FSTOP_HOME = cam.data.dof.aperture_fstop
+    cam.data.dof.focus_object = None
+    cam.data.dof.focus_distance = (cam.location - FOCUS_HOME).length
 
-    world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
-    scene.world = world
-    world.use_nodes = True
-    bg = world.node_tree.nodes.get("Background")
-    bg.inputs[0].default_value = (0.02, 0.02, 0.025, 1)
-    bg.inputs[1].default_value = 0.002
-
-    cam_data = bpy.data.cameras.new("Camera")
-    cam_data.lens = 100
-    # Fixed vertical field of view, so a portrait crop is the same shot as the landscape frame.
-    cam_data.sensor_fit = "VERTICAL"
-    cam_data.sensor_height = 20.25
-    cam_data.clip_start = 0.005
-    cam_data.dof.use_dof = True
-    cam_data.dof.aperture_fstop = 2.8
-    cam = bpy.data.objects.new("Camera", cam_data)
-    scene.collection.objects.link(cam)
-    scene.camera = cam
-    cam.location = (-0.24, 0.0, 0.05)
-    target = Vector((0.004, -0.0005, 0.021))
-    aim(cam, target)
-    cam_data.dof.focus_distance = (cam.location - BOARD_FOCUS).length
-
-    # Tall strip softboxes either side of the camera, riding along with it. A vertical leg
-    # mirrors a light at the camera's own height, so these draw a clean highlight down each
-    # leg and the side of the dome. Linked to the parts only, like the rim.
+    # Tall strip softboxes either side of the camera, riding along with it, for clean
+    # highlights down the legs and dome once the LED is up. Off at the start.
     for name, side in (("Strip L", -1), ("Strip R", 1)):
         strip = bpy.data.lights.new(name, "AREA")
         strip.shape = "RECTANGLE"
@@ -258,7 +213,8 @@ def render_settings(scene, width=1280, height=720, samples=96):
     scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
     scene.render.film_transparent = False
-    scene.view_settings.view_transform = "Standard"
+    # The original's look.
+    scene.view_settings.view_transform = "Filmic"
     scene.view_settings.look = "None"
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_depth = "16"
