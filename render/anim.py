@@ -44,23 +44,23 @@ def lerp(a, b, u):
     return a + (b - a) * u
 
 
-RES_RISE = 0.012
+RES_RISE = 0.012  # straight up: enough for the leads (7.5 mm in the clips) to clear the board
 RES_DROP = 0.05
-
-
-RES_DRIFT = 0.016  # sideways, away from the LED (right on screen)
-RES_TILT = math.radians(-12)  # right end up
+RES_DRIFT = 0.022  # sideways, away from the LED (right on screen)
+RES_TILT = math.radians(12)  # right end dips as it topples off to the right
 
 
 def res_offset(t):
-    """The resistor is pulled out of the board after the LED, much slower, up and to the
-    right with its right end leading. Then it's left behind and drops out of the bottom of
-    the shot as the camera follows the LED up."""
-    pull = ease_io(span(t, 0.06, 0.62))
-    up = RES_RISE * pull
-    down = RES_DROP * span(t, 0.5, 0.85) ** 2
-    side = RES_DRIFT * ease(span(t, 0.06, 0.85))
-    return Vector((0, side, up - down)), RES_TILT * ease(span(t, 0.08, 0.7))
+    """The resistor is pulled straight up out of the board after the LED, much slower. Once
+    its leads are clear it gently topples off to the right, away from the LED, and drops out
+    of the bottom of the shot as the camera follows the LED up."""
+    up = RES_RISE * ease_io(span(t, 0.06, 0.5))
+    # Starts as the leads clear the board (t ~0.32), easing in from zero so the path bends
+    # from straight up into a curve to the side rather than turning a corner.
+    fall = span(t, 0.32, 0.72)
+    side = RES_DRIFT * fall ** 1.7
+    down = RES_DROP * span(t, 0.45, 0.85) ** 2
+    return Vector((0, side, up - down)), RES_TILT * ease(fall)
 
 
 def rise(t):
