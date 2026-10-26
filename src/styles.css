@@ -118,6 +118,7 @@ body {
   text-rendering: optimizeLegibility;
   overflow-x: clip;
   background: var(--bg);
+  color: var(--text);
 }
 
 img {
