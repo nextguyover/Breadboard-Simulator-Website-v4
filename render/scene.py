@@ -60,6 +60,31 @@ def led_material(led):
     return mat
 
 
+def smooth_lens(ob, levels=3, sharp_deg=50):
+    """The lens is a 16-sided low-poly mesh, so its outline shows facets at this zoom. Subdivide it,
+    creasing the hard flange and base edges so only the round body and dome get smoother."""
+    import math as _m
+    me = ob.data
+    me.calc_loop_triangles()
+    crease = me.attributes.get("crease_edge") or me.attributes.new("crease_edge", "FLOAT", "EDGE")
+    faces_of = {}
+    for poly in me.polygons:
+        for key in poly.edge_keys:
+            faces_of.setdefault(key, []).append(poly.normal.copy())
+    for e in me.edges:
+        ns = faces_of.get(tuple(sorted(e.vertices)), [])
+        sharp = len(ns) != 2 or ns[0].angle(ns[1], 0) > _m.radians(sharp_deg)
+        crease.data[e.index].value = 1.0 if sharp else 0.0
+    for poly in me.polygons:
+        poly.use_smooth = True
+    sub = ob.modifiers.new("Smooth lens", "SUBSURF")
+    sub.levels = levels
+    sub.render_levels = levels
+    sub.use_creases = True
+    # Subdivide before the existing smooth-by-angle node modifier.
+    ob.modifiers.move(len(ob.modifiers) - 1, 0)
+
+
 def load():
     bpy.ops.wm.open_mainfile(filepath=os.path.abspath(SOURCE_BLEND))
     for o in list(bpy.data.objects):
@@ -69,6 +94,7 @@ def load():
     led = bpy.data.objects["Diode-Light-Emitting"]
     led.location = LED_HOME
     led["glow"] = 1.0
+    smooth_lens(led)
     led.data.materials[0] = led_material(led)
     res = bpy.data.objects["Resistor-Axial"]
     res.location = RES_HOME
