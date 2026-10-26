@@ -1,5 +1,5 @@
-"""Builds the hero scene (spotlit breadboard, red LED, resistor) from the original
-Breadboard Simulator models. Imported by the render scripts; needs the `bpy` module.
+"""Builds the hero scene (spotlit breadboard, red LED, resistor) from hero.blend.
+Imported by the render scripts; needs the `bpy` module.
 
     python render/scene.py out.png [width height samples]
 """

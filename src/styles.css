@@ -1,17 +1,21 @@
-@import "@fontsource-variable/instrument-sans/wdth.css";
-@import "@fontsource/instrument-serif/400-italic.css";
-@import "@fontsource-variable/jetbrains-mono/wght.css";
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
 
 :root {
   --bg: #050506;
-  --bg-raise: #0c0c0f;
-  --card: rgba(255, 255, 255, 0.035);
-  --card-strong: rgba(255, 255, 255, 0.06);
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.16);
+  --bg-raise: #141418;
+  --card: rgba(255, 255, 255, 0.07);
+  --card-strong: rgba(255, 255, 255, 0.11);
+  --line: rgba(255, 255, 255, 0.15);
+  --line-strong: rgba(255, 255, 255, 0.28);
   --text: #f4f1ec;
-  --muted: #a19ea6;
-  --faint: #6e6b73;
+  --muted: #b9b5bd;
+  --faint: #8d8992;
   --red: #ff3b30;
   --red-hot: #ff5a4a;
   --red-deep: #b5121b;
@@ -19,9 +23,11 @@
   --amber: #ffb547;
   --cyan: #59d6ff;
 
-  --sans: "Instrument Sans Variable", "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Headlines in a condensed industrial grotesque, like part markings and datasheet covers;
+     the accent words open out to the same face at its widest. Body and readouts match the app. */
+  --display: "Archivo Variable", "Archivo", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -56,7 +62,6 @@ body {
   font-family: var(--sans);
   font-size: 17px;
   line-height: 1.55;
-  font-variation-settings: "wdth" 100;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -74,10 +79,7 @@ a {
 }
 
 em {
-  font-family: var(--serif);
   font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.005em;
 }
 
 ::selection {
@@ -161,9 +163,10 @@ em {
 .h2 {
   font-size: clamp(40px, 6.2vw, 88px);
   line-height: 0.98;
-  letter-spacing: -0.035em;
-  font-weight: 600;
-  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.015em;
+  font-family: var(--display);
+  font-weight: 700;
+  font-variation-settings: "wdth" 68;
   margin: 0 0 24px;
   text-wrap: balance;
 }
@@ -177,8 +180,10 @@ em {
 .end-title em,
 .beat-big em {
   color: var(--red-hot);
-  font-size: 1.06em;
-  letter-spacing: -0.01em;
+  font-style: normal;
+  font-weight: 350;
+  font-variation-settings: "wdth" 112;
+  letter-spacing: -0.03em;
 }
 
 .lede {
@@ -191,6 +196,8 @@ em {
 }
 
 h3 {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 88;
   font-size: 21px;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -276,7 +283,7 @@ h3 {
 }
 
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.1);
   border-color: var(--line-strong);
   color: var(--text);
   backdrop-filter: blur(10px);
@@ -284,8 +291,8 @@ h3 {
 }
 
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .btn-light {
@@ -471,9 +478,10 @@ main,
   margin: 0 0 26px;
   font-size: clamp(46px, 6.6vw, 112px);
   line-height: 0.92;
-  letter-spacing: -0.045em;
-  font-weight: 600;
-  font-variation-settings: "wdth" 84;
+  letter-spacing: -0.02em;
+  font-family: var(--display);
+  font-weight: 700;
+  font-variation-settings: "wdth" 68;
 }
 
 .hero-title .line {
@@ -615,9 +623,10 @@ main,
   margin: 0;
   font-size: clamp(38px, 5.4vw, 80px);
   line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 600;
-  font-variation-settings: "wdth" 86;
+  letter-spacing: -0.015em;
+  font-family: var(--display);
+  font-weight: 700;
+  font-variation-settings: "wdth" 68;
 }
 
 @media (max-width: 860px), (max-aspect-ratio: 4/5) {
@@ -709,8 +718,8 @@ main,
   margin-top: 8px;
   padding: 20px 22px 22px;
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(22, 22, 26, 0.72), rgba(12, 12, 15, 0.72));
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(44, 44, 52, 0.78), rgba(26, 26, 31, 0.78));
+  border: 1px solid var(--line-strong);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 30px 80px -30px rgba(0, 0, 0, 0.9);
@@ -1124,8 +1133,8 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 16px;
   background:
     radial-gradient(100% 120% at 50% 50%, rgba(40, 255, 160, 0.04), transparent 70%),
-    #060807;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+    #0b0e0c;
+  border: 1px solid var(--line-strong);
   box-shadow:
     inset 0 0 40px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -1175,9 +1184,10 @@ input[type="range"]::-moz-range-thumb {
   width: 150px;
   height: 64px;
   border-radius: 6px;
-  background: linear-gradient(180deg, #2a2a2e, #141416);
+  background: linear-gradient(180deg, #3c3c42, #222226);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
     0 18px 30px -10px rgba(0, 0, 0, 0.9);
   display: grid;
   place-items: center;
@@ -1278,9 +1288,10 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text) !important;
   font-size: clamp(96px, 11vw, 150px) !important;
   line-height: 0.85;
-  font-weight: 600;
-  letter-spacing: -0.06em;
-  font-variation-settings: "wdth" 80;
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variation-settings: "wdth" 68;
 }
 
 .stat small {
@@ -1378,7 +1389,7 @@ input[type="range"]::-moz-range-thumb {
   scrollbar-width: none;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--line);
   width: max-content;
   max-width: 100%;
@@ -1435,8 +1446,8 @@ input[type="range"]::-moz-range-thumb {
   aspect-ratio: 1;
   border-radius: 18px;
   background:
-    radial-gradient(70% 60% at 50% 40%, rgba(255, 255, 255, 0.06), transparent 70%),
-    var(--card);
+    radial-gradient(75% 65% at 50% 40%, rgba(255, 255, 255, 0.2), transparent 72%),
+    var(--card-strong);
   border: 1px solid var(--line);
   overflow: hidden;
   animation: part-in 0.7s var(--ease-out) both;
@@ -1613,9 +1624,9 @@ input[type="range"]::-moz-range-thumb {
   aspect-ratio: 16 / 10;
   border-radius: 14px 14px 0 0;
   padding: 2.2%;
-  background: linear-gradient(180deg, #2a2a2f, #18181b);
+  background: linear-gradient(180deg, #4a4a52, #2c2c32);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
     0 40px 80px -20px rgba(0, 0, 0, 0.9);
 }
 
@@ -1632,7 +1643,7 @@ input[type="range"]::-moz-range-thumb {
   height: 14px;
   margin: 0 -6%;
   border-radius: 0 0 16px 16px;
-  background: linear-gradient(180deg, #3a3a40, #1d1d21);
+  background: linear-gradient(180deg, #6a6a72, #3a3a40);
   box-shadow: 0 30px 40px -20px rgba(0, 0, 0, 0.9);
 }
 
@@ -1644,9 +1655,9 @@ input[type="range"]::-moz-range-thumb {
   aspect-ratio: 9 / 19.5;
   padding: 2.2%;
   border-radius: 34px;
-  background: linear-gradient(160deg, #3a3a40, #121214);
+  background: linear-gradient(160deg, #5a5a62, #2a2a30);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
     0 40px 70px -20px rgba(0, 0, 0, 0.95),
     -20px 0 60px rgba(0, 0, 0, 0.6);
   transform: rotate(4deg);
@@ -1989,8 +2000,9 @@ input[type="range"]::-moz-range-thumb {
   font-size: clamp(48px, 8vw, 120px);
   line-height: 0.92;
   letter-spacing: -0.045em;
-  font-weight: 600;
-  font-variation-settings: "wdth" 84;
+  font-family: var(--display);
+  font-weight: 700;
+  font-variation-settings: "wdth" 68;
 }
 
 /* ---------- Footer ---------- */

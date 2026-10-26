@@ -18,7 +18,7 @@ import scene as S  # noqa: E402
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 MODELS = os.path.join(ASSETS, "models")
 HDRI = os.path.join(ASSETS, "studio_small_09_1k.hdr")
-# Most models are in metres; these two came out of the old project at other scales.
+# Most models are in metres; these two were exported at other scales.
 SCALE = {"battery": 0.018, "jumper_connector": 0.00493}
 SHOTS = [
     "resistor", "led", "capacitor_polarised", "capacitor_non_polarised", "inductor", "diode", "diode_zener",
