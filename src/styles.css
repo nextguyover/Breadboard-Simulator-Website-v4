@@ -1367,7 +1367,7 @@ input[type="range"]::-moz-range-thumb {
   height: 60px;
   margin-left: -30px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(200, 200, 205, 0.35), transparent 65%);
+  background: radial-gradient(circle, rgba(225, 222, 228, 0.6), transparent 65%);
   filter: blur(6px);
   animation: puff 4s infinite var(--ease-out);
 }
@@ -1379,17 +1379,33 @@ input[type="range"]::-moz-range-thumb {
   animation-delay: 2.6s;
 }
 
+.smoke-art::before {
+  /* scorch glow on the board under the dead LED */
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 140px;
+  height: 46px;
+  margin-left: -70px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 110, 70, 0.32), rgba(255, 90, 74, 0.08) 60%, transparent);
+}
+
 .smoke-art::after {
   content: "";
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 26px;
-  height: 36px;
-  margin-left: -13px;
-  border-radius: 13px 13px 3px 3px;
-  background: linear-gradient(180deg, #4a1512, #2a0b0a);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08);
+  width: 30px;
+  height: 40px;
+  margin-left: -15px;
+  border-radius: 15px 15px 3px 3px;
+  background: linear-gradient(180deg, #b0392c, #6e1d16 70%, #4a130f);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.28),
+    inset -5px 0 8px rgba(0, 0, 0, 0.3),
+    0 0 22px rgba(255, 90, 74, 0.35);
 }
 
 @keyframes puff {
