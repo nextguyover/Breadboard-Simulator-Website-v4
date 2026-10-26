@@ -136,7 +136,7 @@ def main():
         return args[args.index(name) + 1] if name in args else default
 
     w, h = (int(x) for x in opt("--size", "3200x1800").split("x"))
-    samples = int(opt("--samples", "64"))
+    samples = int(opt("--samples", "512"))
     a, b, step = (int(x) for x in opt("--frames", f"0:{FRAMES}:1").split(":"))
     forced = {"on": 1.0, "off": 0.0}.get(opt("--glow", "auto"))
     prefix = opt("--prefix", "a")

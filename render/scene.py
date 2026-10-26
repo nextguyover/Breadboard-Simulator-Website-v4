@@ -212,8 +212,16 @@ def render_settings(scene, width=1280, height=720, samples=96):
     scene.cycles.device = "CPU"
     scene.cycles.samples = samples
     scene.cycles.use_adaptive_sampling = True
-    scene.cycles.adaptive_threshold = 0.02
+    # Tight noise target: the dark spotlight falloff is where a loose threshold leaves blotches
+    # that the denoiser smears into banded, compressed-looking patches.
+    scene.cycles.adaptive_threshold = 0.004
+    scene.cycles.adaptive_min_samples = 64
     scene.cycles.use_denoising = True
+    scene.cycles.denoiser = "OPENIMAGEDENOISE"
+    scene.cycles.denoising_input_passes = "RGB_ALBEDO_NORMAL"
+    scene.cycles.denoising_prefilter = "ACCURATE"
+    scene.cycles.denoising_quality = "HIGH"
+    scene.render.dither_intensity = 1.0
     scene.cycles.max_bounces = 8
     scene.cycles.transmission_bounces = 8
     scene.render.resolution_x = width
