@@ -48,12 +48,19 @@ RES_RISE = 0.012
 RES_DROP = 0.05
 
 
-def res_rise(t):
-    """The resistor is tugged out of the board after the LED, much slower, then gets left
-    behind and drops out of the bottom of the shot as the camera follows the LED up."""
-    up = RES_RISE * ease_io(span(t, 0.06, 0.62))
+RES_DRIFT = 0.009  # sideways, to the right on screen
+RES_TILT = math.radians(14)
+
+
+def res_offset(t):
+    """The resistor is pulled out of the board after the LED, much slower, up and to the
+    right with its right end leading. Then it's left behind and drops out of the bottom of
+    the shot as the camera follows the LED up."""
+    pull = ease_io(span(t, 0.06, 0.62))
+    up = RES_RISE * pull
     down = RES_DROP * span(t, 0.5, 0.85) ** 2
-    return up - down
+    side = RES_DRIFT * ease(span(t, 0.06, 0.85))
+    return Vector((0, side, up - down)), RES_TILT * ease(span(t, 0.08, 0.7))
 
 
 def rise(t):
@@ -81,7 +88,10 @@ def pose(t, led, cam, lights, forced_glow=None):
     spin = ease_io(span(t, 0.36, 1.0))
     led.rotation_euler = (math.radians(-5) * spin, 0, led["base_rz"] + math.radians(115) * spin)
     led["glow"] = glow(t, forced_glow)
-    bpy.data.objects["Resistor-Axial"].location = S.RES_HOME + Vector((0, 0, res_rise(t)))
+    res = bpy.data.objects["Resistor-Axial"]
+    offset, tilt = res_offset(t)
+    res.location = S.RES_HOME + offset
+    res.rotation_euler = (tilt, 0, res["base_rz"])
 
     # Camera: a slow push-in on the hero shot, then a crane and orbit that follows the LED.
     led_center = led.location + Vector((0, 0, -0.0115))
@@ -165,6 +175,7 @@ def main():
     forward = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
     HERO_TARGET = CAM_START + forward * (S.FOCUS_HOME - CAM_START).length
     led["base_rz"] = led.rotation_euler.z
+    res["base_rz"] = res.rotation_euler.z
     S.render_settings(scene, w, h, samples)
     if "--gpu" in args:
         S.use_gpu(scene)
