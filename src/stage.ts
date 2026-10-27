@@ -26,6 +26,8 @@ interface Placement {
 /** The phone frames are a centred 1:2 crop of the 16:9 renders. */
 const CROP_W = 9 / 32;
 const CROP_X = (1 - CROP_W) / 2;
+/** How far the dome's crown is above the "top" mark of the turntable frames, in frame heights. */
+const DOME_CROWN = 0.065;
 
 export interface LedState {
   /** 0 off, 1 normal brightness, above 1 overdriven. */
@@ -62,8 +64,6 @@ export class Stage {
   private w = 0;
   private h = 0;
   private dpr = 1;
-  /** Height of the fixed nav bar, in CSS pixels. */
-  private navH = 68;
   private dirty = true;
   private last = "";
   private onReady: () => void;
@@ -145,7 +145,6 @@ export class Stage {
 
   resize(): void {
     this.dpr = Math.min(devicePixelRatio || 1, 2);
-    this.navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 68;
     const r = this.root.getBoundingClientRect();
     this.w = Math.round(r.width * this.dpr);
     this.h = Math.round(r.height * this.dpr);
@@ -177,12 +176,15 @@ export class Stage {
   /** The sticky layout: LED beside the copy on wide screens, above it on phones. */
   private docked(iw: number, ih: number): Placement {
     const m = seqB.frames[0] as Meta;
-    const top = this.toImage(m.top);
-    const legs = this.toImage(m.legs);
     const wide = this.w / this.h >= 0.8 && this.w / this.dpr > 860;
+    // The "top" mark sits a little below the crown of the dome. Phones frame the LED tight
+    // to the screen's top edge, so they measure from the crown itself.
+    const top = this.toImage([m.top[0], m.top[1] - (wide ? 0 : DOME_CROWN)]);
+    const legs = this.toImage(m.legs);
     const ledH = (legs[1] - top[1]) * ih;
-    // Phones: the LED fills the gap between the nav bar and the rig, which pins at 41% down.
-    const gapTop = this.navH * this.dpr + 10 * this.dpr;
+    // Phones: the LED fills the top of the screen above the rig, which pins at 41% down.
+    // The nav bar stays hidden there, so only a small margin is left.
+    const gapTop = 18 * this.dpr;
     const gapBottom = this.h * 0.41 - 10 * this.dpr;
     const targetH = wide ? this.h * 0.66 : Math.max(this.h * 0.18, gapBottom - gapTop);
     const s = targetH / ledH;

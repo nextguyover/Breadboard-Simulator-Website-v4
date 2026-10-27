@@ -136,6 +136,21 @@ function nav(): void {
   // Where the current scroll direction started, so a small nudge back doesn't flip the bar.
   let turnY = scrollY;
   let hidden = false;
+  const phone = matchMedia("(max-width: 860px), (max-aspect-ratio: 4/5)");
+  const rig = $(".rig");
+  const end = $("[data-seq-end]");
+  /**
+   * Phones: the bar covers the top of the LED, so it stays away for the scroll story and
+   * the live demo (until the rig has left the screen) and for the bookend, which has its
+   * own button. Everywhere else, in the reading sections, a scroll up brings it back.
+   */
+  const immersive = (y: number) => {
+    if (!phone.matches) return false;
+    const vh = innerHeight;
+    const endR = end.getBoundingClientRect();
+    if (y > vh * 0.15 && rig.getBoundingClientRect().bottom > 0) return true;
+    return endR.top < vh * 0.5 && endR.bottom > vh;
+  };
   const update = () => {
     const y = scrollY;
     el.classList.toggle("scrolled", y > 40);
@@ -145,7 +160,7 @@ function nav(): void {
     if (y < innerHeight * 0.6) hidden = false;
     else if (y > turnY + 12) hidden = true;
     else if (y < turnY - 72) hidden = false;
-    el.classList.toggle("hidden", hidden);
+    el.classList.toggle("hidden", hidden || immersive(y));
     lastY = y;
     const mid = innerHeight * 0.4;
     let active = -1;
