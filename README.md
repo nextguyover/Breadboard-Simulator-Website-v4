@@ -20,6 +20,6 @@ LED is on screen in each frame, written by `render/anim.py --meta`.
 ## Deploying
 
 Pushing to the `prod` branch (normally by merging main into it) runs `.github/workflows/deploy.yml`, which
-builds the site and publishes it to Cloudflare Pages. It needs the repository secrets `CLOUDFLARE_API_TOKEN`
-(Account > Cloudflare Pages > Edit) and `CLOUDFLARE_ACCOUNT_ID`. `CF_PAGES_PROJECT` overrides the Pages project
+builds the site and publishes it to Cloudflare Pages. It needs the repository secret `CLOUDFLARE_API_TOKEN`
+(Account > Cloudflare Pages > Edit); the account ID is in the workflow. `CF_PAGES_PROJECT` overrides the Pages project
 name (default `breadboard-simulator-website`).
