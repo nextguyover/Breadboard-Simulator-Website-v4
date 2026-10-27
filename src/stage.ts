@@ -346,6 +346,11 @@ export class Stage {
     if (y + h < this.h) edge(0, y + h, 0, y + h - f, x, y + h - f, w, f);
   }
 
+  /** The new LED doesn't smoke: stop the trickle from the old one. */
+  stopSmoke(): void {
+    this.fx.stop();
+  }
+
   /** The smoke keeps rising from wherever the LED is. */
   trackSmoke(input: StageInput): void {
     const p = this.screenPoint(input, "top");

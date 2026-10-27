@@ -34,6 +34,7 @@ export class Smoke {
   private emitting = 0;
   private w = 0;
   private h = 0;
+  private drawn = false;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext("2d")!;
@@ -105,6 +106,11 @@ export class Smoke {
     });
   }
 
+  /** Stops new smoke; what's already in the air drifts off and fades as usual. */
+  stop(): void {
+    this.emitting = 0;
+  }
+
   /** Steps the simulation; returns true while anything is still visible. */
   update(dt: number): boolean {
     dt = Math.min(dt, 0.05);
@@ -114,9 +120,15 @@ export class Smoke {
       const rate = 26 * Math.min(1, this.emitting / 2 + 0.2);
       if (Math.random() < rate * dt) this.addPuff(s);
     }
-    const busy = this.puffs.length > 0 || this.sparks.length > 0;
-    if (!busy) return false;
     const { ctx } = this;
+    const busy = this.puffs.length > 0 || this.sparks.length > 0;
+    if (!busy) {
+      // Wipe the last frame once, so nothing is left hanging when the final puff goes.
+      if (this.drawn) ctx.clearRect(0, 0, this.w, this.h);
+      this.drawn = false;
+      return false;
+    }
+    this.drawn = true;
     ctx.clearRect(0, 0, this.w, this.h);
 
     ctx.globalCompositeOperation = "source-over";
@@ -129,7 +141,9 @@ export class Smoke {
       p.y += p.vy * dt;
       p.r += p.grow * dt;
       p.rot += p.spin * dt;
-      const t = p.age / p.life;
+      // Clamped: past the end of its life pow() of a negative is NaN, which canvas ignores,
+      // so the puff would be drawn at whatever alpha came before and never cleared.
+      const t = Math.min(1, p.age / p.life);
       const fade = t < 0.08 ? t / 0.08 : Math.pow(1 - t, 1.6);
       ctx.globalAlpha = Math.max(0, fade * p.alpha);
       ctx.save();
@@ -149,7 +163,7 @@ export class Smoke {
       const py = k.y;
       k.x += k.vx * dt;
       k.y += k.vy * dt;
-      const t = 1 - k.age / k.life;
+      const t = Math.max(0, 1 - k.age / k.life);
       ctx.globalAlpha = Math.max(0, t);
       ctx.strokeStyle = `rgb(255,${180 + 60 * t | 0},${90 + 120 * t | 0})`;
       ctx.lineWidth = 1.6 * this.scale;

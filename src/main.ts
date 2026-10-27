@@ -204,6 +204,7 @@ function story(): void {
   rig.onBurn = () => {
     stage.smokeAt(input, 3.5);
   };
+  rig.onReplace = () => stage.stopSmoke();
 
   const onResize = () => {
     geo = measure();

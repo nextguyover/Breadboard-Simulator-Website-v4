@@ -77,6 +77,7 @@ export class Rig {
   private demo: number | null = null;
   /** Fired once, the moment the LED fails. */
   onBurn: (() => void) | null = null;
+  onReplace: (() => void) | null = null;
 
   constructor(private root: HTMLElement) {
     this.slider = root.querySelector<HTMLInputElement>("[data-slider]")!;
@@ -129,6 +130,7 @@ export class Rig {
     this.touched = false;
     this.setIndex(RESISTORS.indexOf(1000));
     this.demoTo(470, 1200);
+    this.onReplace?.();
   }
 
   private current(): number {
