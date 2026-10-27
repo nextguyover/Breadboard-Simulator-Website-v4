@@ -16,3 +16,10 @@ Browsers without WebCodecs fall back to the WebP frames in `public/frames/`. The
 frames and the part shots in `public/parts/` are generated; see
 [`render/README.md`](render/README.md) to re-render them. `src/data/seq-*.json` holds where the
 LED is on screen in each frame, written by `render/anim.py --meta`.
+
+## Deploying
+
+Pushing to the `prod` branch (normally by merging main into it) runs `.github/workflows/deploy.yml`, which
+builds the site and publishes it to Cloudflare Pages. It needs the repository secrets `CLOUDFLARE_API_TOKEN`
+(Account > Cloudflare Pages > Edit) and `CLOUDFLARE_ACCOUNT_ID`. `CF_PAGES_PROJECT` overrides the Pages project
+name (default `breadboard-simulator-website`).
