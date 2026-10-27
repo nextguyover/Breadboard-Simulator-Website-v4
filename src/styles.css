@@ -706,6 +706,9 @@ main,
   .beat-text {
     font-size: 23px;
   }
+  .live {
+    --live-shade: 0.37;
+  }
   .seq-pin::before {
     background:
       linear-gradient(0deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.55) 34%, transparent 58%),
@@ -748,6 +751,17 @@ main,
 .live {
   position: relative;
   min-height: 210vh;
+}
+
+/* Carries on the shade (at its dimmed, scrolled-in strength) under the hero's last line as its pinned frame scrolls away, so
+   the dark doesn't end in a hard edge against the LED below. */
+.live::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 45svh;
+  background: linear-gradient(180deg, rgba(0, 0, 0, var(--live-shade, 0.28)), transparent);
+  pointer-events: none;
 }
 
 .live-inner {
