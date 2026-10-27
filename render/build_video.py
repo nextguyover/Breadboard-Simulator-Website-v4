@@ -29,7 +29,7 @@ DEST = os.path.join(ROOT, "public", "video")
 META = os.path.join(ROOT, "src", "data")
 
 FPS = 30
-GOP = 15  # a keyframe every half second of scroll: cheap seeks, still mostly P/B frames
+GOP = 1  # every frame a keyframe: any scroll position decodes on its own, no seek stalls
 GRAIN_H264 = "--grain" in sys.argv
 
 CODECS = {
@@ -39,7 +39,7 @@ CODECS = {
     ],
     "h264": [
         "-c:v", "libx264", "-preset", "veryslow", "-crf", "23", "-tune", "film",
-        "-profile:v", "high", "-pix_fmt", "yuv420p", "-x264-params", "aq-mode=3",
+        "-profile:v", "high", "-pix_fmt", "yuv420p", "-x264-params", "aq-mode=3", "-bf", "0",
     ],
 }
 

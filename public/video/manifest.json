@@ -1,6 +1,6 @@
 {
   "fps": 30,
-  "gop": 15,
+  "gop": 1,
   "clips": {
     "b-off": {
       "frames": 36,
