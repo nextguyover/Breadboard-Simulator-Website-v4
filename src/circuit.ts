@@ -159,7 +159,7 @@ export class Rig {
     this.flash = 1;
     this.demo = null;
     this.root.querySelector<HTMLElement>("[data-burnt]")!.hidden = false;
-    navigator.vibrate?.(40);
+    buzz(40);
     this.render();
     this.onBurn?.();
   }
@@ -202,4 +202,26 @@ export class Rig {
     svg.style.setProperty("--flow-speed", `${Math.max(0.12, Math.min(2.5, 12 / Math.max(ma, 0.5)))}s`);
     svg.style.setProperty("--rays", String(Math.min(1, brightness(i))));
   }
+}
+
+/**
+ * A haptic bump. Browsers only allow vibration after the page has had a "real" activation,
+ * and a touch drag doesn't count until the finger lifts, so the first pop mid-drag gets
+ * refused. Then it buzzes on release instead, if that comes soon enough to still feel related.
+ */
+function buzz(ms: number): void {
+  if (!("vibrate" in navigator)) return;
+  let ok = false;
+  try {
+    ok = navigator.vibrate(ms);
+  } catch {
+    /* blocked */
+  }
+  if (ok && navigator.userActivation?.hasBeenActive !== false) return;
+  const until = performance.now() + 1500;
+  const retry = () => {
+    if (performance.now() < until) navigator.vibrate(ms);
+  };
+  addEventListener("touchend", retry, { once: true, capture: true });
+  addEventListener("pointerup", retry, { once: true, capture: true });
 }
