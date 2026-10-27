@@ -208,7 +208,7 @@ function story(): void {
   const stage = new Stage(stageEl, () => stageEl.classList.add("ready"));
   stage.load(0);
 
-  const input: StageInput = { seq: "a", frame: 0, dock: 0, shift: [0, 0], zoom: 1, led: { brightness: 0, burnt: 0 }, visible: true };
+  const input: StageInput = { seq: "a", frame: 0, target: 0, dock: 0, shift: [0, 0], zoom: 1, led: { brightness: 0, burnt: 0 }, visible: true };
   rig.onBurn = () => {
     stage.smokeAt(input, 3.5);
   };
@@ -269,6 +269,7 @@ function story(): void {
     const led = rig.tick(dt);
     input.seq = seq;
     input.frame = Math.round(frame * 1000) / 1000;
+    input.target = Math.round(target);
     input.dock = Math.round(dock * 1000) / 1000;
     input.led = seq === "b" ? { brightness: Math.round(led.brightness * 1000) / 1000, burnt: led.burnt } : { brightness: 0, burnt: 0 };
     // Once an opaque section covers the screen there's nothing to draw until the bookend.
@@ -330,6 +331,21 @@ function liveCopyFade(): void {
 
 // ---------- Boot ----------
 
+/**
+ * Wide screens: the live section pins to the top of the screen. When it is taller than the
+ * screen (short windows, or once the burnt message shows), pin it with its bottom on screen
+ * instead, so the rig is never cut off.
+ */
+function fitLivePin(): void {
+  const inner = $(".live-inner");
+  const fit = () => {
+    inner.style.top = `${Math.min(0, innerHeight - inner.offsetHeight)}px`;
+  };
+  new ResizeObserver(fit).observe(inner);
+  addEventListener("resize", fit);
+  fit();
+}
+
 buildDrawer();
 buildExamples();
 reveals();
@@ -339,6 +355,7 @@ faq();
 nav();
 story();
 liveCopyFade();
+fitLivePin();
 startScope($("[data-scope]"));
 startLogic($("[data-logic]"));
 startShare($("[data-linkbox]"));

@@ -38,6 +38,8 @@ export interface StageInput {
   seq: "a" | "b";
   /** Fractional frame index. */
   frame: number;
+  /** The frame the scroll position asks for; `frame` eases towards it. */
+  target: number;
   /** 0 = cover the screen, 1 = the sticky "live" layout. */
   dock: number;
   /** Nudge of the cover layout, as a fraction of the screen (the hero sits right of the copy). */
@@ -104,10 +106,13 @@ export class Stage {
     const clips = await pickClips(this.variant).catch(() => null);
     if (!clips) return false;
     const { img } = this;
+    // Decoded frames are big (a 1440p one is ~15 MB), so each clip gets a memory budget.
+    const mem = (navigator as { deviceMemory?: number }).deviceMemory ?? 8;
+    const mb = 1024 * 1024 * (this.variant === "m" ? 0.5 : 1) * (mem <= 4 ? 0.5 : 1);
     const sets = {
-      a: new VideoSet(clips.a, img.a),
-      bOff: new VideoSet(clips["b-off"], img.bOff),
-      bOn: new VideoSet(clips["b-on"], img.bOn),
+      a: new VideoSet(clips.a, img.a, 320 * mb),
+      bOff: new VideoSet(clips["b-off"], img.bOff, 120 * mb),
+      bOn: new VideoSet(clips["b-on"], img.bOn, 120 * mb),
     };
     let fellBack = false;
     for (const set of Object.values(sets)) {
@@ -191,13 +196,13 @@ export class Stage {
   update(input: StageInput, dt: number): void {
     // Keep decoded only what the current scroll position can reach soon.
     if (input.seq === "a") {
-      this.a.focus(input.frame, 18, 5);
-      this.bOff.focus(0, 2);
-      this.bOn.focus(0, 2);
+      this.a.focus(input.frame, 12, 6, input.target);
+      this.bOff.focus(0, 4);
+      this.bOn.focus(0, 4);
     } else {
-      this.a.focus(this.a.count - 1, 2);
-      this.bOff.focus(input.frame, 9, 3);
-      this.bOn.focus(input.frame, 9, 3);
+      this.a.focus(this.a.count - 1, 4);
+      this.bOff.focus(input.frame, 6, 4, input.target);
+      this.bOn.focus(input.frame, 6, 4, input.target);
     }
     const smokeBusy = this.fx.update(dt);
     const key = JSON.stringify(input);

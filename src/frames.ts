@@ -13,7 +13,8 @@ export interface Frames {
   onLoad: (() => void) | null;
   get(i: number): ImageBitmap | null;
   nearest(i: number): ImageBitmap | null;
-  focus(i: number, ahead: number, behind?: number): void;
+  /** `target` is where the eased scroll is heading, so decoding can get there first. */
+  focus(i: number, ahead: number, behind?: number, target?: number): void;
 }
 
 /**
@@ -30,6 +31,8 @@ export class FrameSet implements Frames {
   private dir = 1;
   private lo = 0;
   private hi = 2;
+  /** The frame nearest() last returned: never freed, so there is always something to draw. */
+  private shown = -1;
   onLoad: (() => void) | null = null;
 
   constructor(
@@ -53,10 +56,13 @@ export class FrameSet implements Frames {
     const n = this.count;
     const c = Math.max(0, Math.min(n - 1, Math.round(i)));
     for (let d = 0; d < n; d++) {
-      const a = this.bitmaps.get(c - d);
-      if (a) return a;
-      const b = this.bitmaps.get(c + d);
-      if (b) return b;
+      for (const k of [c - d, c + d]) {
+        const bmp = this.bitmaps.get(k);
+        if (bmp) {
+          this.shown = k;
+          return bmp;
+        }
+      }
     }
     return null;
   }
@@ -81,7 +87,7 @@ export class FrameSet implements Frames {
 
   /** In the window, with a little slack so jitter at the edge doesn't thrash. */
   private keep(k: number): boolean {
-    return k >= this.lo - 2 && k <= this.hi + 2;
+    return k === this.shown || (k >= this.lo - 2 && k <= this.hi + 2);
   }
 
   private pump(): void {
