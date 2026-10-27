@@ -181,9 +181,9 @@ export class Rig {
     const [label, level] = this.burnt
       ? ["Burnt out", "dead"]
       : ma > 40
-        ? ["Overheating!", "danger"]
+        ? ["Overheating", "danger"]
         : ma > 25
-          ? ["Over its rating", "warn"]
+          ? ["Too bright", "warn"]
           : ma > 4
             ? ["Bright", "ok"]
             : ["Dim", "dim"];

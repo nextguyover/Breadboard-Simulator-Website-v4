@@ -789,6 +789,7 @@ main,
 }
 
 .rig-title {
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -803,6 +804,12 @@ main,
 }
 
 .rig-state {
+  /* Fixed width (the longest label, in mono ch) so changing state never shifts the title. */
+  flex: none;
+  box-sizing: content-box;
+  width: 11ch;
+  text-align: center;
+  white-space: nowrap;
   padding: 6px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
@@ -1134,6 +1141,7 @@ input[type="range"]::-moz-range-thumb {
   }
   .rig-burnt .btn {
     flex: none;
+    padding-inline: 14px;
   }
   .hint {
     display: none;
