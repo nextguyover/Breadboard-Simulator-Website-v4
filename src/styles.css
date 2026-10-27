@@ -1073,20 +1073,67 @@ input[type="range"]::-moz-range-thumb {
   }
   .live-copy {
     width: 100%;
-    padding-bottom: 40svh;
     text-shadow: 0 2px 20px #000;
+  }
+  /* Room for the rig to stay pinned while you play with it. This has to be content, not
+     padding: a sticky element can't move into its parent's padding. */
+  .live-copy::after {
+    content: "";
+    display: block;
+    height: 40svh;
   }
   .rig {
     position: sticky;
     top: 41svh;
-    padding: 16px 16px 18px;
+    /* The whole rig, burnt message included, has to fit under the LED on short phones. */
+    max-height: calc(59svh - 12px);
+    padding: 14px 14px 16px;
+  }
+  .rig-head {
+    font-size: 11px;
   }
   .rig-schematic {
-    margin: 10px 0 2px;
-    max-height: 96px;
+    margin: 6px 0 0;
+    max-height: 62px;
+  }
+  .rig-slider {
+    margin-top: 4px;
+  }
+  .rig-label {
+    margin-bottom: 4px;
+  }
+  .rig-label output {
+    font-size: 19px;
+  }
+  .rig-scale {
+    margin-top: 2px;
+  }
+  .rig-readout {
+    margin: 10px 0 10px;
   }
   .rig-readout div {
+    padding: 8px 10px;
+  }
+  .rig-readout dt {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .rig-readout dd {
+    font-size: 15px;
+  }
+  /* Once it pops the readings are all zero anyway: the message takes their place. */
+  .rig:has(.rig-burnt:not([hidden])) :is(.rig-readout, .meter) {
+    display: none;
+  }
+  .rig-burnt {
+    margin-top: 10px;
     padding: 10px 12px;
+    gap: 10px;
+    font-size: 13.5px;
+    line-height: 1.4;
+  }
+  .rig-burnt .btn {
+    flex: none;
   }
   .hint {
     display: none;

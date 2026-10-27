@@ -60,6 +60,8 @@ export class Stage {
   private w = 0;
   private h = 0;
   private dpr = 1;
+  /** Height of the fixed nav bar, in CSS pixels. */
+  private navH = 68;
   private dirty = true;
   private last = "";
   private onReady: () => void;
@@ -138,6 +140,7 @@ export class Stage {
 
   resize(): void {
     this.dpr = Math.min(devicePixelRatio || 1, 2);
+    this.navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 68;
     const r = this.root.getBoundingClientRect();
     this.w = Math.round(r.width * this.dpr);
     this.h = Math.round(r.height * this.dpr);
@@ -173,12 +176,15 @@ export class Stage {
     const legs = this.toImage(m.legs);
     const wide = this.w / this.h >= 0.8 && this.w / this.dpr > 860;
     const ledH = (legs[1] - top[1]) * ih;
-    const targetH = this.h * (wide ? 0.66 : 0.3);
+    // Phones: the LED fills the gap between the nav bar and the rig, which pins at 41% down.
+    const gapTop = this.navH * this.dpr + 10 * this.dpr;
+    const gapBottom = this.h * 0.41 - 10 * this.dpr;
+    const targetH = wide ? this.h * 0.66 : Math.max(this.h * 0.18, gapBottom - gapTop);
     const s = targetH / ledH;
     const cx = (top[0] + legs[0]) / 2;
     const cy = (top[1] + legs[1]) / 2;
     const tx = wide ? 0.73 : 0.5;
-    const ty = wide ? 0.52 : 0.235;
+    const ty = wide ? 0.52 : (gapTop + targetH / 2) / this.h;
     return { s, x: tx * this.w - cx * iw * s, y: ty * this.h - cy * ih * s };
   }
 

@@ -298,6 +298,27 @@ function story(): void {
   requestAnimationFrame(loop);
 }
 
+/** Phones: once the rig pins under the LED, fade the copy above it as it scrolls over the LED. */
+function liveCopyFade(): void {
+  const phone = matchMedia("(max-width: 860px), (max-aspect-ratio: 4/5)");
+  const rig = $("[data-rig]");
+  const copy = $$(".live-copy > :not([data-rig])");
+  const last = copy.filter((el) => el.matches(".lede")).pop() ?? copy[copy.length - 1];
+  const gap0 = parseFloat(getComputedStyle(rig).marginTop) || 0;
+  const update = () => {
+    let f = 1;
+    if (phone.matches) {
+      // How far the copy has pulled away from the pinned rig: 0 until it pins.
+      const pulled = rig.getBoundingClientRect().top - last.getBoundingClientRect().bottom - gap0;
+      f = 1 - smooth(clamp01(pulled / 140));
+    }
+    for (const el of copy) el.style.opacity = f < 1 ? String(f) : "";
+  };
+  addEventListener("scroll", update, { passive: true });
+  addEventListener("resize", update);
+  update();
+}
+
 // ---------- Boot ----------
 
 buildDrawer();
@@ -308,6 +329,7 @@ counters();
 faq();
 nav();
 story();
+liveCopyFade();
 startScope($("[data-scope]"));
 startLogic($("[data-logic]"));
 startShare($("[data-linkbox]"));
