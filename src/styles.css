@@ -1,12 +1,11 @@
 /* Latin-only woff2 faces: every visitor's browser supports woff2, and the copy is English */
 
 @font-face {
-  font-family: "Archivo Variable";
+  font-family: "Bricolage Grotesque Variable";
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  font-stretch: 62% 125%;
-  src: url("../node_modules/@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2") format("woff2-variations");
+  font-weight: 200 800;
+  src: url("../node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2") format("woff2-variations");
 }
 
 @font-face {
@@ -76,7 +75,7 @@
 
   /* Headlines in a condensed industrial grotesque, like part markings and datasheet covers;
      the accent words open out to the same face at its widest. Body and readouts match the app. */
-  --display: "Archivo Variable", "Archivo", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
   --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
@@ -215,10 +214,10 @@ em {
 .h2 {
   font-size: clamp(40px, 6.2vw, 88px);
   line-height: 0.98;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.012em;
   font-family: var(--display);
   font-weight: 700;
-  font-variation-settings: "wdth" 68;
+  font-variation-settings: "opsz" 60;
   margin: 0 0 24px;
   text-wrap: balance;
 }
@@ -233,9 +232,8 @@ em {
 .beat-big em {
   color: var(--red-hot);
   font-style: normal;
-  font-weight: 350;
-  font-variation-settings: "wdth" 112;
-  letter-spacing: -0.03em;
+  /* Same face and width as the heading, only lighter: the colour carries the emphasis. */
+  font-weight: 400;
 }
 
 .lede {
@@ -249,7 +247,7 @@ em {
 
 h3 {
   font-family: var(--display);
-  font-variation-settings: "wdth" 88;
+  font-variation-settings: "opsz" 32;
   font-size: 21px;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -530,10 +528,10 @@ main,
   margin: 0 0 26px;
   font-size: clamp(46px, 6.6vw, 112px);
   line-height: 0.92;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.012em;
   font-family: var(--display);
   font-weight: 700;
-  font-variation-settings: "wdth" 68;
+  font-variation-settings: "opsz" 60;
 }
 
 .hero-title .line {
@@ -675,10 +673,10 @@ main,
   margin: 0;
   font-size: clamp(38px, 5.4vw, 80px);
   line-height: 1;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.012em;
   font-family: var(--display);
   font-weight: 700;
-  font-variation-settings: "wdth" 68;
+  font-variation-settings: "opsz" 60;
 }
 
 @media (max-width: 860px), (max-aspect-ratio: 4/5) {
@@ -1397,8 +1395,8 @@ input[type="range"]::-moz-range-thumb {
   line-height: 0.85;
   font-family: var(--display);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  font-variation-settings: "wdth" 68;
+  letter-spacing: -0.012em;
+  font-variation-settings: "opsz" 60;
 }
 
 .stat small {
@@ -2123,10 +2121,10 @@ input[type="range"]::-moz-range-thumb {
   margin: 0 0 18px;
   font-size: clamp(48px, 8vw, 120px);
   line-height: 0.92;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.012em;
   font-family: var(--display);
   font-weight: 700;
-  font-variation-settings: "wdth" 68;
+  font-variation-settings: "opsz" 60;
 }
 
 /* ---------- Footer ---------- */
