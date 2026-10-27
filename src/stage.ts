@@ -275,8 +275,10 @@ export class Stage {
     };
 
     blend(set, 1);
-    this.feather(pl.x, pl.y, dw, dh);
-    if (input.seq !== "b") return;
+    if (input.seq !== "b") {
+      this.feather(pl.x, pl.y, dw, dh);
+      return;
+    }
 
     const { brightness, burnt } = input.led;
     const lit = Math.max(0, brightness) * (1 - burnt);
@@ -287,6 +289,8 @@ export class Stage {
         blend(this.bOn, Math.min(1, (lit - 1) * 0.55));
       }
     }
+    // After the lit frames, so their red wash fades out at the frame's edges too.
+    this.feather(pl.x, pl.y, dw, dh, input.dock);
 
     const dome = this.toImage(this.meta("b", input.frame).dome);
     const cx = pl.x + dome[0] * dw;
@@ -296,13 +300,15 @@ export class Stage {
       // A soft halo that grows with the current; the frames carry the near glow.
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 1;
-      const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * (1.6 + lit * 1.4));
+      const hr = r * (1.6 + lit * 1.4);
+      const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, hr);
       const k = Math.min(1, lit * 0.5) * 0.35;
       halo.addColorStop(0, `rgba(255,60,40,${k})`);
       halo.addColorStop(0.35, `rgba(255,30,20,${k * 0.35})`);
       halo.addColorStop(1, "rgba(255,0,0,0)");
       ctx.fillStyle = halo;
-      ctx.fillRect(cx - r * 6, cy - r * 6, r * 12, r * 12);
+      // Fill the gradient's whole circle: a smaller square cuts a hard box into the glow.
+      ctx.fillRect(cx - hr, cy - hr, hr * 2, hr * 2);
       if (lit > 1.2) {
         const hot = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.9);
         const w = Math.min(0.7, (lit - 1.2) * 0.35);
@@ -328,7 +334,7 @@ export class Stage {
   }
 
   /** Where the frame doesn't reach the screen edge, fade its edge into the black. */
-  private feather(x: number, y: number, w: number, h: number): void {
+  private feather(x: number, y: number, w: number, h: number, dock = 0): void {
     const { ctx } = this;
     const edge = (x0: number, y0: number, x1: number, y1: number, rx: number, ry: number, rw: number, rh: number) => {
       const g = ctx.createLinearGradient(x0, y0, x1, y1);
@@ -339,7 +345,8 @@ export class Stage {
     };
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
-    const f = Math.min(w, h) * 0.18;
+    // Docked, the frame is smaller than the screen and its glow needs a longer fade.
+    const f = Math.min(w, h) * (0.18 + 0.17 * dock);
     if (x > 0) edge(x, 0, x + f, 0, x, y, f, h);
     if (x + w < this.w) edge(x + w, 0, x + w - f, 0, x + w - f, y, f, h);
     if (y > 0) edge(0, y, 0, y + f, x, y, w, f);

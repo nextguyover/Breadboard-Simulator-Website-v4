@@ -133,11 +133,19 @@ function nav(): void {
   const links = $$<HTMLAnchorElement>(".nav-links a");
   const sections = links.map((a) => document.querySelector(a.hash));
   let lastY = scrollY;
+  // Where the current scroll direction started, so a small nudge back doesn't flip the bar.
+  let turnY = scrollY;
+  let hidden = false;
   const update = () => {
     const y = scrollY;
     el.classList.toggle("scrolled", y > 40);
-    // Tuck away while scrolling down through the long sequences, back on the way up.
-    el.classList.toggle("hidden", y > lastY && y > innerHeight * 0.6);
+    // Tuck away while scrolling down through the long sequences; come back only after a
+    // deliberate scroll up (or near the top), not on every small wobble.
+    if ((y > lastY) !== (lastY > turnY)) turnY = lastY;
+    if (y < innerHeight * 0.6) hidden = false;
+    else if (y > turnY + 12) hidden = true;
+    else if (y < turnY - 72) hidden = false;
+    el.classList.toggle("hidden", hidden);
     lastY = y;
     const mid = innerHeight * 0.4;
     let active = -1;
