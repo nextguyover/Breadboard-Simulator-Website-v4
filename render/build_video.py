@@ -29,7 +29,10 @@ DEST = os.path.join(ROOT, "public", "video")
 META = os.path.join(ROOT, "src", "data")
 
 FPS = 30
-GOP = 1  # every frame a keyframe: any scroll position decodes on its own, no seek stalls
+# Frames per keyframe. AV1 is all-intra, so any scroll position decodes on its own. H.264
+# all-intra was 3-4x bigger and gets an intra-only codec string Safari may not take, so it
+# keeps a short GOP: reaching any frame costs at most three extra decodes.
+GOP = {"av1": 1, "h264": 4}
 GRAIN_H264 = "--grain" in sys.argv
 
 CODECS = {
@@ -75,7 +78,7 @@ def ffmpeg(path, w, h, codec):
         "-f", "rawvideo", "-pix_fmt", "rgb48le", "-s", f"{w}x{h}", "-r", str(FPS), "-i", "-",
         "-vf", "scale=out_color_matrix=bt709:out_range=tv:flags=lanczos+accurate_rnd+full_chroma_int",
         *CODECS[codec],
-        "-g", str(GOP), "-keyint_min", str(GOP),
+        "-g", str(GOP[codec]), "-keyint_min", str(GOP[codec]),
         "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
         "-movflags", "+faststart", "-an", path,
     ]
@@ -106,7 +109,7 @@ def main():
     codecs = [sys.argv[sys.argv.index("--codec") + 1]] if "--codec" in sys.argv else list(CODECS)
     manifest_path = os.path.join(DEST, "manifest.json")
     manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
-    manifest.update({"fps": FPS, "gop": GOP})
+    manifest.update({"fps": FPS, "gop": GOP})  # per codec
     manifest.setdefault("clips", {})
 
     with ProcessPoolExecutor() as pool:
