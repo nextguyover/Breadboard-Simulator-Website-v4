@@ -637,6 +637,9 @@ main,
   max-width: 400px;
   opacity: 0;
   will-change: transform, opacity;
+  /* Text only, and invisible most of the time: on phones the beats sit right over the
+     hero's buttons, so they must never catch taps. */
+  pointer-events: none;
 }
 
 .beat-left {
