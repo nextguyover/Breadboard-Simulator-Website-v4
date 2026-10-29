@@ -370,7 +370,9 @@ function liveCopyFade(): void {
 function fitLivePin(): void {
   const inner = $(".live-inner");
   const fit = () => {
-    inner.style.top = `${Math.min(0, innerHeight - inner.offsetHeight)}px`;
+    // Phones lay it out in flow (position: relative), where a top offset would shift it up
+    // over the hero.
+    inner.style.top = phone.matches ? "" : `${Math.min(0, innerHeight - inner.offsetHeight)}px`;
   };
   new ResizeObserver(fit).observe(inner);
   addEventListener("resize", fit);
