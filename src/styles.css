@@ -1102,13 +1102,13 @@ input[type="range"]::-moz-range-thumb {
   .live-copy::after {
     content: "";
     display: block;
-    height: 40svh;
+    height: 90svh;
   }
   .rig {
     position: sticky;
-    top: 41svh;
-    /* The whole rig, burnt message included, has to fit under the LED on short phones. */
-    max-height: calc(59svh - 12px);
+    /* Pinned to the bottom of the screen (main.ts sets --rig-top from its height), leaving
+       the screen above it to the LED. */
+    top: var(--rig-top, 41svh);
     padding: 14px 14px 16px;
   }
   .rig-head {

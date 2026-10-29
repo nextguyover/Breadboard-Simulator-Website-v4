@@ -173,6 +173,8 @@ function nav(): void {
 
 // ---------- The stage and the scroll story ----------
 
+const phone = matchMedia("(max-width: 860px), (max-aspect-ratio: 4/5)");
+
 interface Geometry {
   heroTop: number;
   heroRun: number;
@@ -226,6 +228,19 @@ function story(): void {
     stage.smokeAt(input, 3.5);
   };
   rig.onReplace = () => stage.stopSmoke();
+
+  // Phones: pin the rig to the bottom of the screen, whatever its height (the burnt message
+  // makes it taller), and tell the stage so the LED fills the space above it.
+  const rigEl = $(".rig");
+  const pinRig = () => {
+    if (!phone.matches) return;
+    const top = Math.round(innerHeight - rigEl.offsetHeight - 14);
+    document.documentElement.style.setProperty("--rig-top", `${top}px`);
+    stage.setRigTop(top);
+  };
+  new ResizeObserver(pinRig).observe(rigEl);
+  addEventListener("resize", pinRig);
+  pinRig();
 
   const onResize = () => {
     geo = measure();
@@ -323,7 +338,6 @@ function story(): void {
 
 /** Phones: once the rig pins under the LED, fade the copy above it as it scrolls over the LED. */
 function liveCopyFade(): void {
-  const phone = matchMedia("(max-width: 860px), (max-aspect-ratio: 4/5)");
   const rig = $("[data-rig]");
   const copy = $$(".live-copy > :not([data-rig])");
   const last = copy.filter((el) => el.matches(".lede")).pop() ?? copy[copy.length - 1];

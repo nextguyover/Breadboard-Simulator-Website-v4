@@ -61,6 +61,8 @@ export class Stage {
   /** Image format and size the frames download as, settled before the first download. */
   private ext = "webp";
   private tier = "";
+  /** The pinned rig's top edge on phones, in canvas pixels, once main.ts reports it. */
+  private rigTop: number | null = null;
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -128,6 +130,12 @@ export class Stage {
     this.dirty = true;
   }
 
+  /** Phones: where the pinned rig's top edge is, in CSS pixels from the top of the screen. */
+  setRigTop(px: number): void {
+    this.rigTop = px * this.dpr;
+    this.dirty = true;
+  }
+
   /** Maps a point in the full 16:9 render (0-1) into the current variant's image (0-1). */
   private toImage([x, y]: Pt): Pt {
     return this.variant === "m" ? [(x - CROP_X) / CROP_W, y] : [x, y];
@@ -146,10 +154,10 @@ export class Stage {
     const top = this.toImage([m.top[0], m.top[1] - DOME_CROWN]);
     const legs = this.toImage(m.legs);
     const ledH = (legs[1] - top[1]) * ih;
-    // Phones: the LED fills the top of the screen above the rig, which pins at 41% down.
-    // The nav bar stays hidden there, so only a small margin is left.
-    const gapTop = 18 * this.dpr;
-    const gapBottom = this.h * 0.41 - 10 * this.dpr;
+    // Phones: the LED fills the screen above the rig, which pins to the bottom. A margin
+    // above it keeps the crown clear of the top edge and of the browser's own bars.
+    const gapTop = this.h * 0.1;
+    const gapBottom = (this.rigTop ?? this.h * 0.41) - 16 * this.dpr;
     const targetH = wide ? this.h * 0.66 : Math.max(this.h * 0.18, gapBottom - gapTop);
     const s = targetH / ledH;
     const cx = (top[0] + legs[0]) / 2;
