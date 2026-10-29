@@ -4,7 +4,7 @@
  */
 import seqA from "./data/seq-a.json";
 import seqB from "./data/seq-b.json";
-import { FrameSet, type Frames, type Variant, loadInOrder, pickFormat, pickTier } from "./frames";
+import { FrameSet, type Frames, type Variant, pickFormat, pickTier } from "./frames";
 import { Smoke } from "./smoke";
 
 type Pt = [number, number];
@@ -58,8 +58,9 @@ export class Stage {
   private a: FrameSet;
   private bOff: FrameSet;
   private bOn: FrameSet;
-  /** Image format the frames download as, settled before the first download. */
+  /** Image format and size the frames download as, settled before the first download. */
   private ext = "webp";
+  private tier = "";
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -84,13 +85,17 @@ export class Stage {
     // Decoded frames are big (a 1080p one is ~8 MB), so each sequence gets a memory budget.
     const mem = (navigator as { deviceMemory?: number }).deviceMemory ?? 8;
     const mb = 1024 * 1024 * (this.variant === "m" ? 0.5 : 1) * (mem <= 4 ? 0.5 : 1);
-    const pad = (i: number) => String(i).padStart(4, "0");
-    const set = (dir: string, n: number, budget: number) =>
-      new FrameSet(n, (i) => `${import.meta.env.BASE_URL}frames/${dir}/${tier.name}/${pad(i)}.${this.ext}`, tier.size, budget);
-    this.a = set("a", seqA.frames.length, 320 * mb);
-    this.bOff = set("b/off", seqB.frames.length, 120 * mb);
-    this.bOn = set("b/on", seqB.frames.length, 120 * mb);
+    this.tier = tier.name;
+    const set = (n: number, budget: number) => new FrameSet(n, tier.size, budget);
+    this.a = set(seqA.frames.length, 320 * mb);
+    this.bOff = set(seqB.frames.length, 120 * mb);
+    this.bOn = set(seqB.frames.length, 120 * mb);
     for (const s of [this.a, this.bOff, this.bOn]) s.onLoad = () => (this.dirty = true);
+  }
+
+  /** A sequence's packed frames (render/pack_frames.py). */
+  private url(dir: string): string {
+    return `${import.meta.env.BASE_URL}frames/${dir}/${this.tier}.${this.ext}.bin`;
   }
 
   static pickVariant(): Variant {
@@ -99,15 +104,14 @@ export class Stage {
 
   async load(startFrame: number): Promise<void> {
     const start = Math.round(startFrame);
-    this.ext = await pickFormat();
-    // The first frame on its own, so the hero shows at once.
-    await this.a.load(start, true);
+    this.ext = await pickFormat(this.variant);
+    // One request per sequence: the hero first, then the turntable pair.
+    const hero = this.a.loadPack(this.url("a"));
+    // The poster shows until the first frame is decoded.
+    await this.a.ready(start);
     this.onReady();
-    const { a: sa, bOff, bOn } = this;
-    const a = sa.order([start]).map((i) => () => sa.load(i));
-    const b = bOff.order().flatMap((i) => [() => bOff.load(i), () => bOn.load(i)]);
-    // The hero sequence first, but the sticky pose's first frames early so the docked LED never waits.
-    await loadInOrder([...a.slice(0, 12), b[0], b[1], ...a.slice(12), ...b.slice(2)]);
+    await hero.catch(() => {});
+    await Promise.all([this.bOff.loadPack(this.url("b/off")), this.bOn.loadPack(this.url("b/on"))]).catch(() => {});
   }
 
   resize(): void {

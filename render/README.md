@@ -8,7 +8,8 @@ render scene, `assets/hero.blend` (camera, focus point, downlight, backdrop and 
 - `anim.py` animates and renders the sequence to 16-bit PNG.
 - `post.py` adds the LED bloom, vignette and grain.
 - `build_frames.py` grades the renders and encodes the AVIF and WebP frames, in every size, into
-  `public/frames/`, and writes `src/data/frames.json`.
+  `render/frames/`, and writes `src/data/frames.json`. It then runs `pack_frames.py`, which packs
+  each set into one streamable file in `public/frames/` (plus the poster frames).
 - `parts.py` and `build_parts.py` make the studio shots in `public/parts/`.
 
 ## Rendering on a GPU (recommended)

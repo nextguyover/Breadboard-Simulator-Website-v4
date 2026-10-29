@@ -10,10 +10,11 @@ npm run build    # static site in dist/
 ```
 
 The hero is a scroll-scrubbed sequence of Blender renders drawn on a canvas (`src/stage.ts`).
-It plays from still frames in `public/frames/`, AVIF with a WebP fallback, in several sizes
-(`src/data/frames.json`); each screen downloads only the smallest size that covers it. The
-frames are kept compressed and only a window around the scroll position is decoded
-(`src/frames.ts`). The frames and the part shots in `public/parts/` are generated; see
+It plays from still frames, AVIF with a WebP fallback, in several sizes
+(`src/data/frames.json`); each screen downloads only the smallest size that covers it. Each
+sequence is packed into one file in `public/frames/` and streamed, so a page makes three
+requests rather than hundreds. The frames are kept compressed and only a window around the
+scroll position is decoded (`src/frames.ts`). The frames and the part shots in `public/parts/` are generated; see
 [`render/README.md`](render/README.md) to re-render them. `src/data/seq-*.json` holds where the
 LED is on screen in each frame, written by `render/anim.py --meta`.
 

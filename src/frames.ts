@@ -13,7 +13,6 @@
 import frameInfo from "./data/frames.json";
 
 const PARALLEL_DECODES = 4;
-const PARALLEL_DOWNLOADS = 6;
 /** Anchor spacing, in frames. */
 const ANCHOR_STEP = 8;
 
@@ -49,10 +48,14 @@ export function pickTier(variant: Variant, drawWidth: number): { name: string; s
   return { name: hit[0], size: hit[1] };
 }
 
-/** AVIF where the browser decodes it (about half the size of WebP), else WebP. */
-export async function pickFormat(): Promise<string> {
+/**
+ * AVIF where the browser decodes it (a quarter or so smaller than WebP), else WebP. Phones
+ * get WebP regardless: their AVIF decoding is slow enough to stutter a fast first scroll,
+ * and their frames are small, so WebP costs little extra.
+ */
+export async function pickFormat(variant: Variant): Promise<string> {
   const formats = info.formats;
-  if (!formats.includes("avif")) return "webp";
+  if (variant === "m" || !formats.includes("avif")) return "webp";
   const img = new Image();
   // A 1x1 AVIF.
   img.src =
@@ -70,12 +73,11 @@ export class FrameSet implements Frames {
   /** The frame index nearest() last returned. */
   shown = -1;
 
-  private readonly blobs: (Blob | HTMLImageElement | null)[];
+  private readonly blobs: (Blob | null)[];
   private readonly frames = new Map<number, ImageBitmap>();
   private readonly anchors = new Map<number, ImageBitmap>();
   private readonly anchorIdx: number[] = [];
   private readonly decoding = new Set<number>();
-  private loaded = 0;
   private center = 0;
   private dir = 1;
   /** The frames wanted in the window, most wanted first. */
@@ -86,7 +88,6 @@ export class FrameSet implements Frames {
 
   constructor(
     readonly count: number,
-    private readonly url: (i: number) => string,
     /** Size of a decoded frame, for the memory budget and the anchors. */
     private readonly size: [number, number],
     /** Memory the window may use, in bytes. */
@@ -96,10 +97,6 @@ export class FrameSet implements Frames {
     for (let i = 0; i < count; i += ANCHOR_STEP) this.anchorIdx.push(i);
     if (this.anchorIdx[this.anchorIdx.length - 1] !== count - 1) this.anchorIdx.push(count - 1);
     this.cap = Math.max(10, Math.min(60, Math.floor(budget / (size[0] * size[1] * 4))));
-  }
-
-  get complete(): boolean {
-    return this.loaded === this.count;
   }
 
   get(i: number): ImageBitmap | null {
@@ -169,44 +166,64 @@ export class FrameSet implements Frames {
     this.pump();
   }
 
-  /** Download order: the given frames, then coarse to fine, so the whole run scrubs early. */
-  order(first: number[] = []): number[] {
-    const seen = new Set<number>();
-    const out: number[] = [];
-    const add = (i: number) => {
-      if (i >= 0 && i < this.count && !seen.has(i)) {
-        seen.add(i);
-        out.push(i);
+  /**
+   * Streams a packed frame set (render/pack_frames.py): one request for the whole sequence,
+   * each frame usable as soon as its bytes are in. Resolves once it has all arrived.
+   */
+  async loadPack(url: string): Promise<void> {
+    const res = await fetch(url);
+    if (!res.ok || !res.body) throw new Error(`${url}: ${res.status}`);
+    const reader = res.body.getReader();
+    let buf = new Uint8Array(0);
+    let header: { type: string; frames: [number, number][] } | null = null;
+    let next = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (value) {
+        const joined = new Uint8Array(buf.length + value.length);
+        joined.set(buf);
+        joined.set(value, buf.length);
+        buf = joined;
       }
-    };
-    first.forEach(add);
-    add(0);
-    add(this.count - 1);
-    for (const step of [16, 8, 4, 2, 1]) for (let i = 0; i < this.count; i += step) add(i);
-    return out;
+      if (!header && buf.length >= 4) {
+        const len = new DataView(buf.buffer, buf.byteOffset).getUint32(0, true);
+        if (buf.length >= 4 + len) {
+          header = JSON.parse(new TextDecoder().decode(buf.subarray(4, 4 + len)));
+          buf = buf.slice(4 + len);
+        }
+      }
+      if (header) {
+        let added = false;
+        while (next < header.frames.length && buf.length >= header.frames[next][1]) {
+          const [i, size] = header.frames[next++];
+          this.blobs[i] = new Blob([buf.subarray(0, size)], { type: header.type });
+          buf = buf.slice(size);
+          added = true;
+        }
+        if (added) this.pump();
+      }
+      if (done) break;
+    }
   }
 
-  /** Downloads frame `i`; with `decode`, also decodes it at once (the first frame shown). */
-  async load(i: number, decode = false): Promise<void> {
-    if (!this.blobs[i]) {
-      const src = await fetchFrame(this.url(i));
-      if (!src) return; // a missing frame just stays a gap; nearest() covers it
-      this.blobs[i] = src;
-      this.loaded++;
+  /** Resolves once frame `i` is decoded and drawable, or after `timeout` ms regardless. */
+  async ready(i: number, timeout = 8000): Promise<void> {
+    const t0 = performance.now();
+    while (!this.frames.has(i) && performance.now() - t0 < timeout) {
+      if (!this.wantSet.has(i)) this.focus(i, 0, 0);
+      this.pump();
+      await new Promise((r) => setTimeout(r, 16));
     }
-    if (decode && !this.frames.has(i)) {
-      const bmp = await createImageBitmap(this.blobs[i]!).catch(() => null);
-      if (bmp) this.frames.set(i, bmp);
-      this.onLoad?.();
-    }
-    this.pump();
   }
 
   /** Decodes what is missing: anchors first, then the window in order. */
   private pump(): void {
+    // The frames about to be shown, then the anchors, then the rest of the window.
     const jobs: [number, boolean][] = [];
+    const soon = this.want.slice(0, 6);
+    for (const k of soon) if (!this.frames.has(k)) jobs.push([k, false]);
     for (const k of this.anchorIdx) if (!this.anchors.has(k)) jobs.push([k, true]);
-    for (const k of this.want) if (!this.frames.has(k)) jobs.push([k, false]);
+    for (const k of this.want.slice(6)) if (!this.frames.has(k)) jobs.push([k, false]);
     for (const [k, anchor] of jobs) {
       if (this.decoding.size >= PARALLEL_DECODES) return;
       const blob = this.blobs[k];
@@ -233,29 +250,4 @@ export class FrameSet implements Frames {
         });
     }
   }
-}
-
-/** Fetches a frame as a compressed blob; falls back to an <img> where fetch is blocked (e.g. by a CSP). */
-async function fetchFrame(url: string): Promise<Blob | HTMLImageElement | null> {
-  try {
-    const res = await fetch(url);
-    if (res.ok) return await res.blob();
-  } catch {
-    /* fall through */
-  }
-  const img = new Image();
-  img.src = url;
-  return img.decode().then(
-    () => img,
-    () => null,
-  );
-}
-
-/** Runs loads with a little parallelism, in the given order. */
-export async function loadInOrder(jobs: (() => Promise<void>)[], parallel = PARALLEL_DOWNLOADS): Promise<void> {
-  let next = 0;
-  const worker = async () => {
-    while (next < jobs.length) await jobs[next++]();
-  };
-  await Promise.all(Array.from({ length: parallel }, worker));
 }

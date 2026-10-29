@@ -1,5 +1,5 @@
 """Grades the rendered PNGs (render/out) and encodes the frames the site plays
-(public/frames), in AVIF and WebP and at several sizes, so each screen downloads only the
+(render/frames, packed into public/frames by pack_frames.py at the end), in AVIF and WebP and at several sizes, so each screen downloads only the
 smallest set that's sharp on it. Wide screens get the full 16:9 render ("d" tiers); phones
 get its 1:2 centre crop ("m" tiers).
 
@@ -18,12 +18,13 @@ from concurrent.futures import ProcessPoolExecutor
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pack_frames  # noqa: E402
 import post  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
 OUT = os.path.join(HERE, "out")
-DEST = os.path.join(ROOT, "public", "frames")
+DEST = os.path.join(HERE, "frames")
 META = os.path.join(ROOT, "src", "data")
 
 # name: (width, height, framing)
@@ -104,3 +105,4 @@ if __name__ == "__main__":
     for clip, tiers in totals.items():
         for tier, fmts in tiers.items():
             print(clip, tier, {f: f"{n / 1024:.0f} KB" for f, n in fmts.items()})
+    pack_frames.main()
