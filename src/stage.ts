@@ -4,8 +4,7 @@
  */
 import seqA from "./data/seq-a.json";
 import seqB from "./data/seq-b.json";
-import { FrameSet, type Frames, type Variant, loadInOrder } from "./frames";
-import { VideoSet, pickClips } from "./video";
+import { FrameSet, type Frames, type Variant, loadInOrder, pickFormat, pickTier } from "./frames";
 import { Smoke } from "./smoke";
 
 type Pt = [number, number];
@@ -56,11 +55,11 @@ export class Stage {
   private ctx: CanvasRenderingContext2D;
   private fx: Smoke;
   private variant: Variant;
-  private a: Frames;
-  private bOff: Frames;
-  private bOn: Frames;
-  /** The image-frame versions: the fallback, and the instant first frame before video arrives. */
-  private readonly img: { a: FrameSet; bOff: FrameSet; bOn: FrameSet };
+  private a: FrameSet;
+  private bOff: FrameSet;
+  private bOn: FrameSet;
+  /** Image format the frames download as, settled before the first download. */
+  private ext = "webp";
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -77,16 +76,21 @@ export class Stage {
     this.ctx = canvas.getContext("2d", { alpha: false })!;
     this.fx = new Smoke(root.querySelector<HTMLCanvasElement>(".stage-fx")!);
     this.variant = Stage.pickVariant();
-    const v = this.variant;
-    const pad = (i: number) => String(i).padStart(4, "0");
-    this.img = {
-      a: new FrameSet(seqA.frames.length, (i) => `${import.meta.env.BASE_URL}frames/a/${v}/${pad(i)}.webp`),
-      bOff: new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/off/${v}/${pad(i)}.webp`),
-      bOn: new FrameSet(seqB.frames.length, (i) => `${import.meta.env.BASE_URL}frames/b/on/${v}/${pad(i)}.webp`),
-    };
-    ({ a: this.a, bOff: this.bOff, bOn: this.bOn } = this.img);
-    for (const set of Object.values(this.img)) set.onLoad = () => (this.dirty = true);
     this.resize();
+    // The smallest frame size that covers the screen: the stage draws a frame at least as
+    // wide as this in the cover layout.
+    const aspect = this.variant === "m" ? 0.5 : 16 / 9;
+    const tier = pickTier(this.variant, Math.max(this.w, this.h * aspect));
+    // Decoded frames are big (a 1080p one is ~8 MB), so each sequence gets a memory budget.
+    const mem = (navigator as { deviceMemory?: number }).deviceMemory ?? 8;
+    const mb = 1024 * 1024 * (this.variant === "m" ? 0.5 : 1) * (mem <= 4 ? 0.5 : 1);
+    const pad = (i: number) => String(i).padStart(4, "0");
+    const set = (dir: string, n: number, budget: number) =>
+      new FrameSet(n, (i) => `${import.meta.env.BASE_URL}frames/${dir}/${tier.name}/${pad(i)}.${this.ext}`, tier.size, budget);
+    this.a = set("a", seqA.frames.length, 320 * mb);
+    this.bOff = set("b/off", seqB.frames.length, 120 * mb);
+    this.bOn = set("b/on", seqB.frames.length, 120 * mb);
+    for (const s of [this.a, this.bOff, this.bOn]) s.onLoad = () => (this.dirty = true);
   }
 
   static pickVariant(): Variant {
@@ -95,52 +99,15 @@ export class Stage {
 
   async load(startFrame: number): Promise<void> {
     const start = Math.round(startFrame);
-    // One small image first, so the hero shows at once whatever the rest loads as.
-    await this.img.a.load(start, true);
+    this.ext = await pickFormat();
+    // The first frame on its own, so the hero shows at once.
+    await this.a.load(start, true);
     this.onReady();
-    if (!(await this.loadVideo(start))) await this.loadImages(start);
-  }
-
-  /** The video clips, where WebCodecs can play them. Resolves false to fall back to images. */
-  private async loadVideo(start: number): Promise<boolean> {
-    const clips = await pickClips(this.variant).catch(() => null);
-    if (!clips) return false;
-    const { img } = this;
-    // Decoded frames are big (a 1440p one is ~15 MB), so each clip gets a memory budget.
-    const mem = (navigator as { deviceMemory?: number }).deviceMemory ?? 8;
-    const mb = 1024 * 1024 * (this.variant === "m" ? 0.5 : 1) * (mem <= 4 ? 0.5 : 1);
-    const sets = {
-      a: new VideoSet(clips.a, img.a, 320 * mb),
-      bOff: new VideoSet(clips["b-off"], img.bOff, 120 * mb),
-      bOn: new VideoSet(clips["b-on"], img.bOn, 120 * mb),
-    };
-    let fellBack = false;
-    for (const set of Object.values(sets)) {
-      set.onLoad = () => (this.dirty = true);
-      set.onFail = () => {
-        if (fellBack) return;
-        fellBack = true;
-        ({ a: this.a, bOff: this.bOff, bOn: this.bOn } = img);
-        this.dirty = true;
-        void this.loadImages(start);
-      };
-    }
-    // The turntable's first frames as images too, in case the page is reloaded mid-way down.
-    void img.bOff.load(0, true);
-    void img.bOn.load(0, true);
-    ({ a: this.a, bOff: this.bOff, bOn: this.bOn } = sets);
-    this.sizeVideo();
-    if (!(await sets.a.load())) return true; // onFail has already switched to images
-    await Promise.all([sets.bOff.load(), sets.bOn.load()]);
-    return true;
-  }
-
-  private async loadImages(start: number): Promise<void> {
-    const { a: ia, bOff, bOn } = this.img;
-    const a = ia.order([start]).map((i) => () => ia.load(i));
+    const { a: sa, bOff, bOn } = this;
+    const a = sa.order([start]).map((i) => () => sa.load(i));
     const b = bOff.order().flatMap((i) => [() => bOff.load(i), () => bOn.load(i)]);
     // The hero sequence first, but the sticky pose's first frames early so the docked LED never waits.
-    await loadInOrder([...a.slice(0, 12), b[0], b[1], ...a.slice(12), ...b.slice(2)], 6);
+    await loadInOrder([...a.slice(0, 12), b[0], b[1], ...a.slice(12), ...b.slice(2)]);
   }
 
   resize(): void {
@@ -152,15 +119,7 @@ export class Stage {
     c.width = this.w;
     c.height = this.h;
     this.fx.resize(this.w, this.h, this.dpr);
-    this.sizeVideo();
     this.dirty = true;
-  }
-
-  /** Tells the video sets how wide the cover layout draws a frame, so they decode no bigger. */
-  private sizeVideo(): void {
-    const aspect = this.variant === "m" ? 0.5 : 16 / 9;
-    const px = Math.max(this.w, this.h * aspect);
-    for (const set of [this.a, this.bOff, this.bOn]) if (set instanceof VideoSet) set.setMaxWidth(px);
   }
 
   /** Maps a point in the full 16:9 render (0-1) into the current variant's image (0-1). */
@@ -177,9 +136,8 @@ export class Stage {
   private docked(iw: number, ih: number): Placement {
     const m = seqB.frames[0] as Meta;
     const wide = this.w / this.h >= 0.8 && this.w / this.dpr > 860;
-    // The "top" mark sits a little below the crown of the dome. Phones frame the LED tight
-    // to the screen's top edge, so they measure from the crown itself.
-    const top = this.toImage([m.top[0], m.top[1] - (wide ? 0 : DOME_CROWN)]);
+    // The "top" mark sits a little below the crown of the dome, so measure from the crown.
+    const top = this.toImage([m.top[0], m.top[1] - DOME_CROWN]);
     const legs = this.toImage(m.legs);
     const ledH = (legs[1] - top[1]) * ih;
     // Phones: the LED fills the top of the screen above the rig, which pins at 41% down.
@@ -191,7 +149,7 @@ export class Stage {
     const cx = (top[0] + legs[0]) / 2;
     const cy = (top[1] + legs[1]) / 2;
     const tx = wide ? 0.73 : 0.5;
-    const ty = wide ? 0.52 : (gapTop + targetH / 2) / this.h;
+    const ty = wide ? 0.56 : (gapTop + targetH / 2) / this.h;
     return { s, x: tx * this.w - cx * iw * s, y: ty * this.h - cy * ih * s };
   }
 

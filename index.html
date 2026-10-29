@@ -19,8 +19,6 @@
     <meta property="og:url" content="https://breadboardsimulator.com/" />
     <meta property="og:image" content="https://breadboardsimulator.com/og.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preload" as="image" href="/frames/a/d/0000.webp" media="(min-aspect-ratio: 4/5)" fetchpriority="high" />
-    <link rel="preload" as="image" href="/frames/a/m/0000.webp" media="(max-aspect-ratio: 4/5)" fetchpriority="high" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -28,8 +26,11 @@
     <!-- The rendered LED lives on this fixed stage; sections scroll over it. -->
     <div class="stage" aria-hidden="true">
       <picture class="stage-poster">
-        <source media="(max-aspect-ratio: 4/5)" srcset="/frames/a/m/0000.webp" />
-        <img src="/frames/a/d/0000.webp" alt="" decoding="async" fetchpriority="high" />
+        <!-- The smallest frame size: it shows only until the canvas has its first frame. -->
+        <source media="(max-aspect-ratio: 4/5)" type="image/avif" srcset="/frames/a/m540/0000.avif" />
+        <source media="(max-aspect-ratio: 4/5)" srcset="/frames/a/m540/0000.webp" />
+        <source type="image/avif" srcset="/frames/a/d1280/0000.avif" />
+        <img src="/frames/a/d1280/0000.webp" alt="" decoding="async" fetchpriority="high" />
       </picture>
       <canvas class="stage-canvas"></canvas>
       <canvas class="stage-fx"></canvas>
