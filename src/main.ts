@@ -221,6 +221,7 @@ function story(): void {
   let demoDone = false;
 
   const stage = new Stage(stageEl, () => stageEl.classList.add("ready"));
+  const fxEl = $(".stage-fx", stageEl);
   stage.load(0);
 
   const input: StageInput = { seq: "a", frame: 0, target: 0, dock: 0, shift: [0, 0], zoom: 1, led: { brightness: 0, burnt: 0 }, visible: true };
@@ -304,6 +305,9 @@ function story(): void {
     input.visible = y < geo.coverTop || inEnd;
     stage.trackSmoke(input);
     stage.update(input, dt);
+    // The smoke belongs to the live demo: fade it with the LED's docking, gone elsewhere.
+    const smokeO = seq === "b" ? String(Math.round(dock * 100) / 100) : "0";
+    if (fxEl.style.opacity !== smokeO) fxEl.style.opacity = smokeO;
 
     // Hero copy leaves first, then the story beats come and go.
     const out = clamp01(heroP / 0.1);
