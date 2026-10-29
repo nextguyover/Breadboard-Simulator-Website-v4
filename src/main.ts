@@ -306,7 +306,7 @@ function story(): void {
     stage.trackSmoke(input);
     stage.update(input, dt);
     // The smoke belongs to the live demo: fade it with the LED's docking, gone elsewhere.
-    const smokeO = seq === "b" ? String(Math.round(dock * 100) / 100) : "0";
+    const smokeO = seq === "b" ? String(Math.round(Math.min(1, dock * 2) * 100) / 100) : "0";
     if (fxEl.style.opacity !== smokeO) fxEl.style.opacity = smokeO;
 
     // Hero copy leaves first, then the story beats come and go.
