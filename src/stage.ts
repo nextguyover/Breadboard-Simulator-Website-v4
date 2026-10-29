@@ -95,7 +95,9 @@ export class Stage {
 
   /** A sequence's packed frames (render/pack_frames.py). */
   private url(dir: string): string {
-    return `${import.meta.env.BASE_URL}frames/${dir}/${this.tier}.${this.ext}.bin`;
+    // Hosts that won't serve .bin (the claude.ai preview) build with another suffix.
+    const suffix = import.meta.env.VITE_PACK_SUFFIX ?? "bin";
+    return `${import.meta.env.BASE_URL}frames/${dir}/${this.tier}.${this.ext}.${suffix}`;
   }
 
   static pickVariant(): Variant {
